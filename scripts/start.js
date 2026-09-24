@@ -17,6 +17,9 @@ if (args.includes('--smoke')) {
   fs.rmSync(out, { recursive: true, force: true });
   env.MATCHQUEUE_SMOKE = out;
   env.MATCHQUEUE_USERDATA = path.join(out, 'userdata');
+  // わんコメがインストールされている想定の仮フォルダ（本物のわんコメに触れないように）
+  env.MATCHQUEUE_APPDATA = path.join(out, 'appdata');
+  fs.mkdirSync(path.join(env.MATCHQUEUE_APPDATA, 'onecomme'), { recursive: true });
 }
 
 spawn(electron, ['.', ...args.filter((a) => a !== '--smoke')], { stdio: 'inherit', env, cwd: root })

@@ -72,6 +72,18 @@ module.exports = async function smoke({ app, win, actions, engine }) {
     await view('format'); await shot('15-format-coop');
     await view('history'); await shot('16-history-coop');
 
+    // わんコメ連携（仮のわんコメフォルダにプラグインを入れ、わんコメの代わりに呼び出す）
+    const pluginDir = actions.ocInstall();
+    const plugin = require(path.join(pluginDir, 'plugin.js'));
+    plugin.init();
+    const c = (id, userId, name, comment) => ({ service: 'youtube', data: { id, userId, name, comment, timestamp: String(Date.now()) } });
+    await view('overlay'); await sleep(800);
+    plugin.subscribe('comments', { comments: [c('oc1', 'UC_oc1', 'わんコメ太郎', '!参加'), c('oc2', 'UC_oc2', 'わんコメ花子', '!参加 hanako_01')] });
+    await sleep(1200); await shot('17-overlay-notice');
+    await view('settings'); await sleep(300); await shot('18-settings-onecomme');
+    await view('dash'); await shot('19-dash-onecomme');
+    plugin.destroy();
+
     fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ ok: true, errors }, null, 2));
   } catch (e) {
     fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ ok: false, error: String(e && e.stack || e), errors }, null, 2));

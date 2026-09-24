@@ -25,6 +25,14 @@ YouTube でのゲーム配信中に行う「視聴者参加型ルームマッチ
   - YouTube 連携（Google Cloud 必須）は任意の上級者向けとして公開。次は Google Cloud なしでチャットを読む方法を追加予定
     （候補：非公式のチャット読み取り / わんコメ連携。どちらも投稿は不可なので告知はオーバーレイで行う想定）
 
+- 2026-09-24 わんコメ連携を実装（Google Cloud なしでチャットを読める）
+  - わんコメの WebSocket API は非公開化、HTTP API にはコメント取得がないため、**わんコメのプラグイン**方式にした
+  - `src/onecomme/plugin.js`（テンプレート）を `%APPDATA%\onecomme\plugins\matchqueue\plugin.js` にポートとトークンを埋めて配置
+  - プラグインは `subscribe('comments', {comments})` で新着コメントを受け、`POST /onecomme/comments`（`X-MatchQueue-Token` 必須）で転送。30秒ごとに `/onecomme/hello`
+  - 投稿はできないので、受付などの返信はオーバーレイにお知らせ表示（`settings.overlay.notices`、SSE の `event: notice`）
+  - **本物のわんコメでの動作は未検証**（開発 PC にわんコメなし）。テストはわんコメの呼び出しを模擬している
+- 2026-09-24 公開リポジトリから `mockups/` を削除
+
 ## 公開・リリース手順
 
 - この環境では git / gh が PATH にないことがある：`C:\Program Files\Git\cmd`、`C:\Program Files\GitHub CLI`
@@ -52,11 +60,13 @@ YouTube でのゲーム配信中に行う「視聴者参加型ルームマッチ
 - `src/main/youtube.js` — YouTube Data API v3（fetch 直叩き、OAuth ループバック + PKCE、チャットのポーリング/投稿）
 - `src/main/poster.js` — 投稿キュー（告知優先・最低間隔・返信まとめ・200 文字制限）
 - `src/main/server.js` — 127.0.0.1 の HTTP サーバ（`/overlay`、SSE `/events`、`/oauth/callback`）既定ポート 17800
+- `src/main/onecomme.js` — わんコメ連携（プラグインの配置、転送されたコメントの受信・重複除去）
+- `src/onecomme/plugin.js` — わんコメに入れるプラグインのテンプレート（`__PORT__` / `__TOKEN__` を置換）
 - `src/main/store.js` — userData（`%APPDATA%/MatchQueue`）に JSON 保存。配信回の履歴は `sessions/`
 - `src/renderer/` — 管理画面（素の HTML/JS、CSP あり、インラインスクリプト不可）
 - `src/overlay/overlay.html` — OBS ブラウザソース用（1920×1080、透過）
 - `docs/concept.md` — 検討資料 / `docs/youtube-setup.md` — Google Cloud 初期設定手順（ユーザー向け）
-- `mockups/index.html` — 初期のイメージ画面（参考として残置）
+- 初期のイメージ画面（`mockups/`）は 2026-09-24 に削除（git 履歴には残っている）
 
 ## 実装上の注意
 

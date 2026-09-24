@@ -7,6 +7,7 @@ const { Store } = require('./store');
 const { Poster } = require('./poster');
 const { LocalServer } = require('./server');
 const { YouTube } = require('./youtube');
+const { OneComme } = require('./onecomme');
 
 // 開発用：データ保存先の切り替え（動作確認で本番データを汚さないため）
 if (process.env.MATCHQUEUE_USERDATA) app.setPath('userData', process.env.MATCHQUEUE_USERDATA);
@@ -14,7 +15,7 @@ if (process.env.MATCHQUEUE_USERDATA) app.setPath('userData', process.env.MATCHQU
 if (!app.requestSingleInstanceLock()) app.quit();
 
 let win = null;
-let store, engine, poster, server, yt;
+let store, engine, poster, server, yt, oc;
 const chatLog = []; // 画面表示用の直近チャット（保存しない）
 
 // ---------- 画面への送信 ----------
@@ -31,6 +32,7 @@ function snapshot() {
     botLog: poster.log,
     botPending: poster.pending(),
     youtube: yt.status(),
+    onecomme: oc.status(),
     server: { url: server.baseUrl(), error: server.error },
   };
 }
@@ -64,10 +66,12 @@ function secretBox() {
 async function init() {
   store = new Store(app.getPath('userData'));
   engine = new Engine(store.load('state.json', {}));
+  oc = new OneComme({ store, appData: process.env.MATCHQUEUE_APPDATA || app.getPath('appData') });
 
   server = new LocalServer({
     getPublicState: () => engine.publicState(),
     onOAuthCallback: (params) => yt.handleCallback(params),
+    onOneComme: (kind, body, token) => oc.receive(kind, body, token),
   });
   await server.listen(engine.settings.server.port);
 
@@ -91,17 +95,25 @@ async function init() {
   });
   engine.on('post', ({ kind, text }) => {
     // 未接続時は実際には送られないので、画面上だけで返答内容を見せる
-    if (!yt.canPost()) addChat({ name: 'MatchQueue（未送信）', text, kind: 'bot' });
+    if (!yt.canPost()) addChat({ name: 'MatchQueue（チャット未投稿）', text, kind: 'bot' });
+    // 受付などの返信はオーバーレイにも出す（わんコメ連携のようにチャットへ投稿できない場合の代わり）
+    if (kind === 'reply' && engine.settings.overlay.notices) server.notice(text);
     poster.enqueue(kind, text);
   });
   poster.on('change', pushToUi);
   yt.on('status', pushToUi);
-  yt.on('message', (m) => {
-    if (m.self && /^[@【]/.test(m.text)) { addChat({ name: m.name, text: m.text, kind: 'bot' }); return; }
-    const cmd = engine.parseCommand(m.text);
-    addChat({ name: m.name, text: m.text, kind: cmd ? 'cmd' : 'normal', tag: cmd && cmd.type, member: m.member });
-    engine.handleChat(m);
-  });
+  yt.on('message', onChatMessage);
+  oc.on('status', pushToUi);
+  oc.on('message', onChatMessage);
+  setInterval(pushToUi, 15000); // わんコメの接続状態（最終受信からの経過）を更新
+}
+
+// YouTube API / わんコメ から届いたチャット1件
+function onChatMessage(m) {
+  if (m.self && /^[@【]/.test(m.text)) { addChat({ name: m.name, text: m.text, kind: 'bot' }); return; }
+  const cmd = engine.parseCommand(m.text);
+  addChat({ name: m.name, text: m.text, kind: cmd ? 'cmd' : 'normal', tag: cmd && cmd.type, member: m.member, source: m.source });
+  engine.handleChat(m);
 }
 
 function createWindow() {
@@ -161,7 +173,10 @@ const actions = {
   // 設定
   updateSettings: async (patch) => {
     const s = engine.updateSettings(patch);
-    if (patch && patch.server && patch.server.port) await server.restart(Number(patch.server.port));
+    if (patch && patch.server && patch.server.port) {
+      await server.restart(Number(patch.server.port));
+      oc.updateIfInstalled(engine.settings.server.port); // プラグインに書いたポートも更新
+    }
     pushToUi();
     return s;
   },
@@ -185,6 +200,13 @@ const actions = {
   openOverlay: () => server.baseUrl() && shell.openExternal(`${server.baseUrl()}/overlay`),
   copy: (text) => clipboard.writeText(String(text)),
   openExternal: (url) => /^https:\/\//.test(url) && shell.openExternal(url),
+  // わんコメ
+  ocInstall: () => oc.install(engine.settings.server.port),
+  ocOpenFolder: () => {
+    const dir = oc.isInstalled() ? oc.pluginDir() : path.dirname(oc.pluginDir());
+    if (!fs.existsSync(dir)) throw new Error('わんコメのプラグインフォルダが見つかりません');
+    return shell.openPath(dir);
+  },
   // YouTube
   ytSetClient: (id, secret) => yt.setClient(id, secret),
   ytLogin: () => yt.beginAuth(),

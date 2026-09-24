@@ -139,15 +139,29 @@ function render() {
   renderModes();
   renderSettings();
   renderYt();
+  renderOneComme();
   renderOverlay();
+}
+
+function renderOneComme() {
+  const o = S.onecomme;
+  let st;
+  if (o.connected) st = `<span class="ok">● 受信中</span>（最終 ${hhmm(o.lastSeenAt)}・受信 ${o.count} 件${o.pluginVersion ? `・プラグイン v${esc(o.pluginVersion)}` : ''}）`;
+  else if (o.installed) st = 'プラグインは入っています。わんコメ側で有効にし、わんコメを起動してください';
+  else if (o.oneCommeFound) st = 'プラグイン未インストール';
+  else st = 'わんコメが見つかりません（インストールして一度起動してください）';
+  $('#ocStatus').innerHTML = st;
+  $('#ocInstallBtn').textContent = o.installed ? 'プラグインを入れ直す' : 'わんコメにプラグインを入れる';
 }
 
 function renderHeader() {
   const y = S.youtube;
   const pill = $('#ytPill');
   const chatOn = y.chat.state === 'connected';
-  pill.className = 'yt-pill' + (chatOn ? ' on' : y.authorized ? ' warn' : '');
-  pill.querySelector('span').textContent = chatOn ? 'チャット取得中' : y.chat.state === 'connecting' ? 'チャット接続中…' : y.authorized ? 'チャット未接続' : 'YouTube 未接続';
+  const ocOn = S.onecomme.connected;
+  pill.className = 'yt-pill' + (chatOn || ocOn ? ' on' : y.authorized ? ' warn' : '');
+  pill.querySelector('span').textContent = chatOn ? (ocOn ? 'チャット取得中（YouTube＋わんコメ）' : 'チャット取得中') : ocOn ? 'わんコメ連携中'
+    : y.chat.state === 'connecting' ? 'チャット接続中…' : y.authorized ? 'チャット未接続' : 'チャット未接続';
   $('#streamTitle').textContent = y.chat.title || '';
   const players = Object.values(S.data.players).filter((p) => p.key !== 'host' && p.state !== 'removed');
   $('#hCount').textContent = players.length;
@@ -271,7 +285,7 @@ function renderBot() {
   $('#autoPost').checked = S.settings.autoPost;
   $('#botPrev').textContent = S.announceText || '対戦が決まると、ここに告知文が表示されます。';
   const canPost = S.youtube.chat.state === 'connected';
-  $('#botInfo').textContent = !canPost ? 'YouTube のチャットに接続すると投稿されます' : (S.settings.autoPost ? '対戦が決まると自動で投稿します' : '手動投稿モード') + (S.botPending ? `・送信待ち ${S.botPending} 件` : '');
+  $('#botInfo').textContent = !canPost ? (S.onecomme.connected ? 'わんコメ連携ではチャットに投稿できません（受付の返信はオーバーレイに表示）' : 'YouTube API でチャットに接続すると投稿されます') : (S.settings.autoPost ? '対戦が決まると自動で投稿します' : '手動投稿モード') + (S.botPending ? `・送信待ち ${S.botPending} 件` : '');
   $('#botLog').innerHTML = S.botLog.slice(0, 6).map((l) => `<li title="${esc(l.note || l.text)}"><span>${hhmm(l.at)}</span><span class="s-${l.status}">${LOG_STATUS[l.status] || l.status}</span><span>${esc(l.text)}</span></li>`).join('');
 }
 
@@ -280,7 +294,8 @@ function renderChat() {
   const box = $('#chatBox');
   const stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
   const y = S.youtube.chat;
-  $('#chatInfo').textContent = { idle: '未接続', connecting: '接続中…', connected: 'コマンド検出中', ended: '配信終了', error: 'エラー' }[y.state] || y.state;
+  $('#chatInfo').textContent = S.onecomme.connected && y.state !== 'connected' ? 'わんコメから受信中'
+    : { idle: '未接続', connecting: '接続中…', connected: 'コマンド検出中', ended: '配信終了', error: 'エラー' }[y.state] || y.state;
   const lastId = S.chat.length ? S.chat[S.chat.length - 1].id : 0;
   if (lastId === chatLastId) return;
   chatLastId = lastId;
@@ -382,6 +397,7 @@ const after = {
   postAnnounce: (r) => { if (r.value && !r.value.ok) toast(r.value.message); else if (r.value) toast('告知を送信キューに入れました'); },
   exportCsv: (r) => { if (r.value) toast(`保存しました：${r.value}`); },
   newSession: () => { $('#newSessionConfirm').hidden = true; toast('新しい配信回を始めました'); },
+  ocInstall: (r) => { if (!r.error) toast('プラグインを入れました。わんコメの「連携 → プラグイン」で有効にしてください'); },
   ytLogin: (r) => { if (!r.error) toast('ブラウザで Google にログインしてください'); },
   startNext: (r) => { if (r.value === false) toast('参加者が足りません'); },
 };

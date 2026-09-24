@@ -41,6 +41,11 @@
   .coop .m.host{background:#4a3608;border-left-color:var(--accent)}
   .coop .m.open{background:#000a;border-left-color:#666;color:#aaa;font-weight:600}
   .coop .m small{display:block;font-size:20px;font-weight:600;opacity:.9;font-family:ui-monospace,Consolas,monospace}
+  /* Bot の返信（受付しました等）を一時表示 */
+  .notices{position:absolute;left:40px;top:150px;width:620px;display:flex;flex-direction:column;gap:8px}
+  .notice{background:#2b2410e6;border-left:8px solid var(--accent);padding:10px 18px;font-size:24px;font-weight:600;border-radius:0 8px 8px 0;animation:nin .3s ease-out;transition:opacity .6s}
+  .notice.out{opacity:0}
+  @keyframes nin{from{opacity:0;transform:translateX(-30px)}}
   .pop{animation:pop .5s ease-out}
   @keyframes pop{from{opacity:0;transform:translateX(-50%) translateY(30px)}}
 </style>
@@ -51,6 +56,7 @@
   <div class="round" id="round" hidden></div>
   <div class="match" id="match" hidden></div>
   <div class="coop" id="coop" hidden></div>
+  <div class="notices" id="notices"></div>
 <script>
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -89,9 +95,21 @@
     }
   }
 
+  function notice(text) {
+    const box = $('#notices');
+    const el = document.createElement('div');
+    el.className = 'notice';
+    el.textContent = text;
+    box.appendChild(el);
+    while (box.children.length > 4) box.firstChild.remove();
+    setTimeout(() => el.classList.add('out'), 8000);
+    setTimeout(() => el.remove(), 8700);
+  }
+
   function connect() {
     const es = new EventSource('/events');
     es.onmessage = (e) => render(JSON.parse(e.data));
+    es.addEventListener('notice', (e) => notice(JSON.parse(e.data).text));
     es.onerror = () => { es.close(); setTimeout(connect, 3000); };
   }
   connect();

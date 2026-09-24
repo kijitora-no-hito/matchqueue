@@ -196,6 +196,7 @@
               <label class="field chk"><input type="checkbox" data-ov="queue"> 待機列（上位5人）</label>
               <label class="field chk"><input type="checkbox" data-ov="join"> 参加方法</label>
               <label class="field chk"><input type="checkbox" data-ov="maskId"> ゲーム内IDを伏せる（先頭3文字のみ）</label>
+              <label class="field chk"><input type="checkbox" data-ov="notices"> 受付などの返信をお知らせ表示</label>
             </div>
           </div>
         </div>
@@ -208,9 +209,24 @@
         <h2>設定</h2>
         <div class="grid2">
           <div class="card span2">
-            <h4>YouTube 接続</h4>
+            <h4>わんコメ連携 <span class="tag join">かんたん・おすすめ</span></h4>
+            <p class="small mute">コメントビューア「わんコメ」が受け取ったコメントを MatchQueue に転送します。Google Cloud の設定は不要です。
+              チャットへの投稿はできないため、受付などの返信は配信オーバーレイにお知らせとして表示されます。</p>
+            <div class="field"><label>状態</label><span id="ocStatus"></span></div>
+            <div class="field"><label></label>
+              <button class="btn primary" data-act="ocInstall" id="ocInstallBtn">わんコメにプラグインを入れる</button>
+              <button class="btn" data-act="ocOpenFolder">プラグインフォルダを開く</button>
+            </div>
+            <ol class="small steps">
+              <li>わんコメを起動した状態で「わんコメにプラグインを入れる」を押す</li>
+              <li>わんコメの「メニュー（≡）→ 連携 → プラグイン」で「MatchQueue 連携」を有効にする（表示されない場合はわんコメを再起動）</li>
+              <li>わんコメで配信のコメント取得を開始すると、ここが「受信中」になります</li>
+            </ol>
+          </div>
+          <div class="card span2">
+            <h4>YouTube 接続（上級者向け・任意）</h4>
             <div id="ytSetup">
-              <p class="small mute">初回のみ、Google Cloud で「OAuth クライアント ID（デスクトップアプリ）」を作成して貼り付けてください。手順は <code>docs/youtube-setup.md</code> を参照。</p>
+              <p class="small mute">チャットへの自動投稿（告知・受付の返信）もしたい場合に使います。初回のみ、Google Cloud で「OAuth クライアント ID（デスクトップアプリ）」を作成して貼り付けてください。手順は <code>docs/youtube-setup.md</code> を参照。</p>
               <div class="field"><label>クライアント ID</label><input id="ytClientId" class="grow" autocomplete="off"></div>
               <div class="field"><label>クライアント シークレット</label><input id="ytClientSecret" type="password" class="grow" placeholder="保存済みの場合は空欄のままで OK" autocomplete="off"></div>
               <div class="field"><label></label><button class="btn" id="ytSaveClient">保存</button></div>

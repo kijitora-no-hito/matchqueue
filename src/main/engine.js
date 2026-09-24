@@ -57,7 +57,7 @@ const DEFAULT_SETTINGS = {
     minIntervalSec: 10,
     replies: 'batch', // batch | each | none
   },
-  overlay: { match: true, queue: true, join: true, maskId: false },
+  overlay: { match: true, queue: true, join: true, maskId: false, notices: true },
   server: { port: 17800 },
   tpl: {
     next: '【第{no}試合】{p1} vs {p2} 準備お願いします！ 次は {next} さん',
@@ -462,11 +462,11 @@ class Engine extends EventEmitter {
     return null;
   }
 
-  // msg: { channelId, name, text, member }
+  // msg: { channelId, name, text, member, key? }（key 省略時は YouTube のチャンネル ID から作る）
   handleChat(msg) {
     const cmd = this.parseCommand(msg.text);
     if (!cmd) return null;
-    const key = `yt:${msg.channelId}`;
+    const key = msg.key || `yt:${msg.channelId}`;
     let r;
     switch (cmd.type) {
       case 'join': r = this.join({ key, channelId: msg.channelId, name: msg.name, member: !!msg.member }, cmd.arg); break;

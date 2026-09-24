@@ -12,9 +12,10 @@ const OVERLAY_DIR = path.join(__dirname, '..', 'overlay');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
 
 class LocalServer {
-  constructor({ getPublicState, onOAuthCallback }) {
+  constructor({ getPublicState, onOAuthCallback, onOneComme }) {
     this.getPublicState = getPublicState;
     this.onOAuthCallback = onOAuthCallback;
+    this.onOneComme = onOneComme;
     this.clients = new Set();
     this.port = null;
     this.error = null;
@@ -55,9 +56,46 @@ class LocalServer {
     for (const c of this.clients) c.write(msg);
   }
 
+  // オーバーレイに一時的なお知らせ（Bot の返信など）を出す
+  notice(text) {
+    const msg = `event: notice\ndata: ${JSON.stringify({ text })}\n\n`;
+    for (const c of this.clients) c.write(msg);
+  }
+
+  readJson(req, limit = 1024 * 1024) {
+    return new Promise((resolve, reject) => {
+      let size = 0;
+      const chunks = [];
+      req.on('data', (c) => {
+        size += c.length;
+        if (size > limit) { reject(new Error('too large')); req.destroy(); return; }
+        chunks.push(c);
+      });
+      req.on('end', () => {
+        try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch (e) { reject(e); }
+      });
+      req.on('error', reject);
+    });
+  }
+
   async handle(req, res) {
     const url = new URL(req.url, 'http://127.0.0.1');
     const p = url.pathname;
+
+    // わんコメのプラグインからの転送（トークン必須。ブラウザからは独自ヘッダ付きで送れない）
+    const oc = p.match(/^\/onecomme\/(hello|comments)$/);
+    if (oc) {
+      if (req.method !== 'POST' || !this.onOneComme) { res.writeHead(405); res.end(); return; }
+      try {
+        const body = await this.readJson(req);
+        const ok = this.onOneComme(oc[1], body, req.headers['x-matchqueue-token']);
+        res.writeHead(ok ? 204 : 403);
+      } catch {
+        res.writeHead(400);
+      }
+      res.end();
+      return;
+    }
 
     if (p === '/events') {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
