@@ -5,6 +5,14 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
 視聴者がチャットに `!参加 ゲーム内ID` と書くと待機列に入り、次の対戦・パーティーを自動で組みます。
 配信者は勝敗（クリア / 全滅）をボタン 1 つで入力するだけで、次の組み合わせがアプリ・配信画面（OBS）・YouTube チャットに告知されます。
 
+<p align="center">
+  <a href="https://github.com/kijitora-no-hito/matchqueue/releases/latest/download/MatchQueue-Setup.exe">
+    <img alt="Windows版をダウンロード" src="https://img.shields.io/github/v/release/kijitora-no-hito/matchqueue?style=for-the-badge&label=Windows%E7%89%88%E3%82%92%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89&color=f5b62a&labelColor=1d2129&logo=windows&logoColor=white" height="44">
+  </a>
+  <br>
+  <sub>ボタンを押すとインストーラ（MatchQueue-Setup.exe）がダウンロードされます。使い方は下の「<a href="#インストール">インストール</a>」を見てください。</sub>
+</p>
+
 ![進行画面（対戦）](docs/images/versus.png)
 
 ## できること
@@ -26,9 +34,12 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
 
 ## インストール
 
-1. [Releases](../../releases) から `MatchQueue-Setup-x.y.z.exe` をダウンロードして実行
-   - 署名していないため Windows の警告が出ます。「詳細情報」→「実行」で進めてください
-2. スタートメニューの「MatchQueue」から起動
+1. **[インストーラをダウンロード](https://github.com/kijitora-no-hito/matchqueue/releases/latest/download/MatchQueue-Setup.exe)**（常に最新版です）して実行
+   - 署名していないため「Windows によって PC が保護されました」と出ます。「詳細情報」→「実行」で進めてください
+   - ブラウザで「一般的にダウンロードされていません」と出た場合は、「…」→「保持する」を選んでください
+2. スタートメニューまたはデスクトップの「MatchQueue」から起動
+
+過去のバージョンや更新内容は [Releases](../../releases) にあります。
 
 データ（参加者・履歴・設定）は `%APPDATA%\MatchQueue` に保存されます。上書きインストールしても消えません。
 

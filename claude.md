@@ -43,6 +43,8 @@ YouTube でのゲーム配信中に行う「視聴者参加型ルームマッチ
 - この環境では git / gh が PATH にないことがある：`C:\Program Files\Git\cmd`、`C:\Program Files\GitHub CLI`
 - リリース：`package.json` の version を上げる → `npm run dist` → `gh release create vX.Y.Z` にインストーラを添付
   （添付ファイル名はスペースなしの `MatchQueue-Setup-X.Y.Z.exe` にする）
+  - **同じインストーラを `MatchQueue-Setup.exe`（バージョンなし）でも必ず添付する**。README のダウンロードボタンは
+    `releases/latest/download/MatchQueue-Setup.exe` を指しているため、これがないとボタンが壊れる
 
 ## 前提・オーナー要望
 
