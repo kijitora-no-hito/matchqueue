@@ -25,7 +25,7 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
 
 ## インストール
 
-1. [Releases](../../releases) から `MatchQueue Setup x.y.z.exe` をダウンロードして実行
+1. [Releases](../../releases) から `MatchQueue-Setup-x.y.z.exe` をダウンロードして実行
    - 署名していないため Windows の警告が出ます。「詳細情報」→「実行」で進めてください
 2. スタートメニューの「MatchQueue」から起動
 

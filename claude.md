@@ -21,6 +21,16 @@ YouTube でのゲーム配信中に行う「視聴者参加型ルームマッチ
   - ゲストの死亡：その人だけ抜けて列の最後尾へ。空き枠は既定で次のプレイまで空ける（`coop.refill`、「今すぐ補充」ボタンあり）
   - ボス名/ミッション名を任意入力でき、告知・履歴・オーバーレイに出る
 
+- 2026-09-24 GitHub に公開：https://github.com/kijitora-no-hito/matchqueue（Public / MIT）。v0.1.0 を Releases に掲載
+  - YouTube 連携（Google Cloud 必須）は任意の上級者向けとして公開。次は Google Cloud なしでチャットを読む方法を追加予定
+    （候補：非公式のチャット読み取り / わんコメ連携。どちらも投稿は不可なので告知はオーバーレイで行う想定）
+
+## 公開・リリース手順
+
+- この環境では git / gh が PATH にないことがある：`C:\Program Files\Git\cmd`、`C:\Program Files\GitHub CLI`
+- リリース：`package.json` の version を上げる → `npm run dist` → `gh release create vX.Y.Z` にインストーラを添付
+  （添付ファイル名はスペースなしの `MatchQueue-Setup-X.Y.Z.exe` にする）
+
 ## 前提・オーナー要望
 
 - Web ベースの UI。Node.js サーバを手動で立てるのは不可 → Electron アプリ（インストーラでスタートメニュー登録）。
