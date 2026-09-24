@@ -1,0 +1,47 @@
+{
+  "name": "matchqueue",
+  "productName": "MatchQueue",
+  "version": "0.1.0",
+  "description": "YouTube 配信の視聴者参加型ルームマッチ進行管理ツール",
+  "main": "src/main/main.js",
+  "private": true,
+  "license": "MIT",
+  "author": "kijitora-no-hito",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kijitora-no-hito/matchqueue.git"
+  },
+  "scripts": {
+    "start": "node scripts/start.js",
+    "smoke": "node scripts/start.js --smoke",
+    "test": "node --test test/*.test.js",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "local.matchqueue",
+    "productName": "MatchQueue",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createStartMenuShortcut": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "MatchQueue"
+    }
+  }
+}

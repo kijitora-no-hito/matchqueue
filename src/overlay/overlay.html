@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>MatchQueue Overlay</title>
+<style>
+  /* OBS ブラウザソース用（1920×1080、背景透過） */
+  :root{ --accent:#f5b62a; --p1:#3d8bff; --p2:#ff4d5e; }
+  html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:transparent;color:#fff;
+    font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif}
+  [hidden]{display:none!important}
+  .join{position:absolute;left:40px;top:40px;background:#000b;border-left:10px solid var(--accent);padding:14px 26px;font-size:30px;font-weight:800}
+  .join small{display:block;font-size:22px;color:#ddd;font-weight:500;margin-top:2px}
+  .join.closed{border-color:#777}
+  .queue{position:absolute;right:40px;top:40px;width:380px;background:#000b;border-radius:14px;padding:18px 24px;font-size:26px}
+  .queue h5{margin:0 0 8px;font-size:20px;color:var(--accent);letter-spacing:.2em;display:flex}
+  .queue h5 span{margin-left:auto;color:#bbb;letter-spacing:0;font-weight:500}
+  .queue ol{margin:0;padding-left:34px}
+  .queue li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5}
+  .queue .none{color:#aaa;list-style:none;margin-left:-34px}
+  .round{position:absolute;left:50%;bottom:190px;transform:translateX(-50%);background:#111;color:#ddd;font-size:22px;padding:5px 26px;border-radius:8px;letter-spacing:.12em;white-space:nowrap}
+  .round b{color:var(--accent)}
+  .match{position:absolute;left:50%;bottom:60px;transform:translateX(-50%);display:flex;align-items:stretch;font-weight:800;font-size:46px;filter:drop-shadow(0 8px 16px #0009)}
+  .match .a,.match .b{padding:16px 44px;width:560px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .match .a{background:var(--p1);clip-path:polygon(0 0,100% 0,94% 100%,0 100%)}
+  .match .b{background:var(--p2);clip-path:polygon(6% 0,100% 0,100% 100%,0 100%);text-align:right}
+  .match .m{background:#111;color:var(--accent);display:grid;place-items:center;padding:0 28px;font-size:34px;font-style:italic}
+  .match small{display:block;font-size:22px;font-weight:600;opacity:.9;font-family:ui-monospace,Consolas,monospace}
+  .match .mem{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .match.duo{font-size:34px}
+  .match.duo .mem{display:flex;align-items:baseline;gap:14px;line-height:1.3}
+  .match.duo .b .mem{justify-content:flex-end}
+  .match.duo small{display:inline;font-size:18px}
+  .round.duo{bottom:200px}
+  /* 協力プレイ */
+  .coop{position:absolute;left:50%;bottom:50px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;filter:drop-shadow(0 8px 16px #0009)}
+  .coop .head{background:#111;color:#ddd;font-size:22px;padding:5px 26px;border-radius:8px;letter-spacing:.1em;white-space:nowrap}
+  .coop .head b{color:var(--accent);letter-spacing:0}
+  .coop .row{display:flex;gap:10px}
+  .coop .m{width:330px;padding:12px 22px;background:#1b3f7a;border-left:8px solid var(--p1);font-size:32px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .coop .m.host{background:#4a3608;border-left-color:var(--accent)}
+  .coop .m.open{background:#000a;border-left-color:#666;color:#aaa;font-weight:600}
+  .coop .m small{display:block;font-size:20px;font-weight:600;opacity:.9;font-family:ui-monospace,Consolas,monospace}
+  .pop{animation:pop .5s ease-out}
+  @keyframes pop{from{opacity:0;transform:translateX(-50%) translateY(30px)}}
+</style>
+</head>
+<body>
+  <div class="join" id="join" hidden></div>
+  <div class="queue" id="queue" hidden></div>
+  <div class="round" id="round" hidden></div>
+  <div class="match" id="match" hidden></div>
+  <div class="coop" id="coop" hidden></div>
+<script>
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let lastNo = null;
+
+  function render(s) {
+    const o = s.overlay;
+    const join = $('#join');
+    join.hidden = !o.join;
+    join.className = 'join' + (s.accepting ? '' : ' closed');
+    join.innerHTML = s.accepting ? `参加受付中！<small>チャットに「${esc(s.joinCmd)} ゲーム内ID」</small>` : '参加受付は終了しました';
+
+    const q = $('#queue');
+    q.hidden = !o.queue;
+    q.innerHTML = `<h5>NEXT<span>待機 ${s.queueCount} 人</span></h5><ol>${s.queue.slice(0, 5).map((p) => `<li>${esc(p.name)}</li>`).join('') || '<li class="none">募集中</li>'}</ol>`;
+
+    const co = s.coop;
+    const cv = $('#coop');
+    cv.hidden = !(o.match && co);
+    if (co) {
+      const mem = (p, i) => `<div class="m${i === 0 ? ' host' : ''}">${esc(p.name)}${p.gameId ? `<small>${esc(p.gameId)}</small>` : '<small>&nbsp;</small>'}</div>`;
+      const open = Array.from({ length: co.open }, () => '<div class="m open">募集中<small>&nbsp;</small></div>').join('');
+      cv.innerHTML = `<div class="head">PLAY ${co.no}${co.target ? ` ・ <b>${esc(co.target)}</b>` : ''}</div><div class="row">${co.members.map(mem).join('')}${open}</div>`;
+    }
+
+    const c = s.current;
+    const m = $('#match'), r = $('#round');
+    m.hidden = r.hidden = !(o.match && c);
+    if (c) {
+      r.innerHTML = `MATCH ${c.no}${s.champ ? ` ・ <b>${esc(s.champ.name)} ${s.champ.streak}連勝中</b>` : ''}`;
+      const team = (t) => t.map((p) => `<div class="mem">${esc(p.name)}${p.gameId ? `<small>${esc(p.gameId)}</small>` : ''}</div>`).join('');
+      m.classList.toggle('duo', c.teams[0].length > 1);
+      r.classList.toggle('duo', c.teams[0].length > 1);
+      m.innerHTML = `<div class="a">${team(c.teams[0])}</div><div class="m">VS</div><div class="b">${team(c.teams[1])}</div>`;
+      if (lastNo !== c.no) { m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop'); lastNo = c.no; }
+    }
+  }
+
+  function connect() {
+    const es = new EventSource('/events');
+    es.onmessage = (e) => render(JSON.parse(e.data));
+    es.onerror = () => { es.close(); setTimeout(connect, 3000); };
+  }
+  connect();
+</script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src http://127.0.0.1:*">
+<title>MatchQueue</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">Match<b>Queue</b></div>
+    <div class="yt-pill" id="ytPill"><i></i><span>YouTube 未接続</span></div>
+    <div class="hstat ellipsis" id="streamTitle"></div>
+    <div class="spacer"></div>
+    <div class="hstat">参加者<strong id="hCount">0</strong></div>
+    <div class="hstat">待機<strong id="hQueue">0</strong></div>
+    <div class="hstat"><span id="hMatchesLabel">試合</span><strong id="hMatches">0</strong></div>
+    <div class="switch" id="acceptSw" title="チャットからの参加受付"><span>参加受付</span><span class="track"></span></div>
+  </header>
+
+  <nav>
+    <button class="active" data-v="dash">▶ 進行</button>
+    <button data-v="players">参加者</button>
+    <button data-v="format">対戦形式</button>
+    <button data-v="history">対戦履歴</button>
+    <button data-v="overlay">配信オーバーレイ</button>
+    <button data-v="settings">設定</button>
+    <div class="foot">
+      <div class="small mute">ショートカット（進行画面）</div>
+      <div class="small"><kbd>1</kbd> 左の勝ち　<kbd>2</kbd> 右の勝ち</div>
+      <div class="small"><kbd>Ctrl</kbd>+<kbd>Z</kbd> 取り消し</div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- 進行 -->
+    <section class="view dash active" id="v-dash">
+      <div class="panel">
+        <h3>待機列 <span class="tag" id="qCount">0人</span><span class="r small">ドラッグで並べ替え</span></h3>
+        <div class="pbody">
+          <ol class="queue" id="queue"></ol>
+          <div class="cmdhint" id="cmdHint"></div>
+          <form class="manual" id="manualForm">
+            <div class="small mute">手動で追加</div>
+            <input id="manualName" placeholder="名前" autocomplete="off">
+            <input id="manualId" placeholder="ゲーム内ID" autocomplete="off">
+            <button class="btn" type="submit">追加</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="quickbar" id="quickbar">
+          <label>種類<select data-set="format"><option value="versus">対戦</option><option value="coop">協力プレイ</option></select></label>
+          <span class="qgroup" id="qVersus">
+            <label>人数<select data-set="teamSize" data-type="num"><option value="1">1対1</option><option value="2">2対2</option></select></label>
+            <label>進め方<select data-set="mode"><option value="winner">勝ち抜き</option><option value="rotation">ローテーション</option></select></label>
+            <label>配信者<select data-set="hostPlay"><option value="off">参加しない</option><option value="always">毎試合出る</option><option value="queue">列に並ぶ</option><option value="champion">勝ち抜きの王者役</option></select></label>
+            <button class="btn sm" data-act="hostJoin" id="hostJoinBtn" hidden>配信者を列に入れる</button>
+          </span>
+          <span class="qgroup" id="qCoop" hidden>
+            <label>ゲーム<select data-set="coop.preset" id="presetSelect"></select></label>
+            <label>パーティー<select data-set="coop.partySize" data-type="num"><option value="2">2人</option><option value="3">3人</option><option value="4">4人</option></select></label>
+            <label>1人あたり<select data-set="coop.stayPlays" data-type="num"><option value="1">1プレイ</option><option value="2">2プレイ</option><option value="3">3プレイ</option><option value="0">死亡するまで</option></select></label>
+          </span>
+        </div>
+        <div class="panel">
+          <div class="match" id="match"></div>
+          <div class="match" id="coopView" hidden>
+            <div class="mhead" id="coopHead"></div>
+            <div class="targetrow"><label id="targetLabel">ボス</label><input id="targetInput" placeholder="名前を入れると告知・履歴・オーバーレイに出ます（任意）" autocomplete="off"></div>
+            <div class="party" id="partyBox"></div>
+            <div class="deadline small" id="deadLine"></div>
+            <div class="coopbtns" id="coopBtns"></div>
+            <div class="subacts"><button class="btn" data-act="undo" id="coopUndo">↶ 直前の操作を取り消し</button></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3 id="nextTitle">この先の対戦</h3>
+          <div class="pbody"><div class="next" id="next"></div></div>
+        </div>
+        <div class="panel grow">
+          <h3>YouTube への告知
+            <label class="r small chk"><input type="checkbox" id="autoPost"> 対戦が決まったら自動投稿</label>
+          </h3>
+          <div class="pbody">
+            <div class="botprev" id="botPrev"></div>
+            <div class="botrow"><button class="btn primary" data-act="postAnnounce">今すぐ投稿</button><span class="small mute" id="botInfo"></span></div>
+            <ul class="botlog" id="botLog"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3><span class="ytdot">●</span> ライブチャット <span class="r tag" id="chatInfo">未接続</span></h3>
+        <div class="pbody" id="chatBox"><div class="chat" id="chat"></div></div>
+        <form class="testchat" id="testForm" title="YouTube を使わずにコマンドの動作を試せます">
+          <input id="testName" placeholder="テスト用の名前" value="テスト太郎" autocomplete="off">
+          <input id="testText" placeholder="例: !参加 ABC123" autocomplete="off">
+          <button class="btn sm" type="submit">テスト送信</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 参加者 -->
+    <section class="view" id="v-players">
+      <div class="page">
+        <h2>参加者</h2>
+        <p class="lead">チャットの「!参加 ID」で自動登録されます。保留にすると待機列から外れ、復帰で最後尾に戻ります。ゲーム内IDはクリックで修正できます。</p>
+        <div class="card flush"><div class="tablewrap"><table id="ptable"></table></div></div>
+      </div>
+    </section>
+
+    <!-- 対戦形式 -->
+    <section class="view" id="v-format">
+      <div class="page">
+        <h2>対戦形式</h2>
+        <p class="lead">変更は次の試合から適用されます。進行画面の上部からも切り替えられます。</p>
+        <h3 class="sec">ゲームの種類</h3>
+        <div class="modes" id="formats"></div>
+        <div id="versusOpts">
+          <h3 class="sec">人数</h3>
+          <div class="modes" id="teamSizes"></div>
+          <h3 class="sec">進め方</h3>
+          <div class="modes" id="modes"></div>
+          <h3 class="sec">配信者（あなた）の参加</h3>
+          <div class="modes" id="hostPlays"></div>
+        </div>
+        <div id="coopOpts" hidden>
+          <h3 class="sec">ゲーム（ボタンや告知の言葉が変わります）</h3>
+          <div class="modes" id="presets"></div>
+          <h3 class="sec">パーティー人数（あなたを含む）</h3>
+          <div class="modes" id="partySizes"></div>
+          <h3 class="sec">1人あたりの参加</h3>
+          <div class="modes" id="stayPlays"></div>
+          <h3 class="sec">ゲストが死亡して空いた枠</h3>
+          <div class="modes" id="refills"></div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h4>ルール</h4>
+            <div class="field"><label>連勝上限（勝ち抜き）</label><select data-set="maxStreak" data-type="num"><option value="1">1（毎回交代）</option><option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="99">なし</option></select></div>
+            <div class="field"><label>対戦後</label><select data-set="rejoin" data-type="bool"><option value="true">待機列の最後尾に戻る</option><option value="false">1回で終了</option></select></div>
+            <div class="field"><label>配信者の表示名</label><input data-set="hostName"></div>
+          </div>
+          <div class="card">
+            <h4>参加条件</h4>
+            <div class="field"><label>最大待機人数</label><input type="number" min="1" max="500" data-set="maxQueue" data-type="num" class="w90"></div>
+            <div class="field"><label>メンバー優先</label><select data-set="memberPriority" data-type="bool"><option value="false">なし</option><option value="true">メンバーは列の前方に入る</option></select></div>
+            <div class="field"><label>ゲーム内ID 最大文字数</label><input type="number" min="1" max="100" data-set="gameIdMaxLength" data-type="num" class="w90"></div>
+            <div class="field"><label>ゲーム内ID 形式</label><input data-set="gameIdPattern" placeholder="正規表現（空欄なら制限なし）"></div>
+            <p class="small mute">例：数字 9〜12 桁なら <code>^\d{9,12}$</code></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 履歴 -->
+    <section class="view" id="v-history">
+      <div class="page">
+        <h2>対戦履歴</h2>
+        <p class="lead" id="sessionInfo"></p>
+        <div class="toolbar">
+          <button class="btn" data-act="exportCsv">CSV 出力</button>
+          <button class="btn" data-act="openSessionsFolder">過去の配信データ</button>
+          <span class="spacer"></span>
+          <button class="btn danger" id="newSessionBtn">新しい配信回を始める</button>
+        </div>
+        <div class="confirm" id="newSessionConfirm" hidden>
+          今の参加者・待機列・履歴を保存して空にします。よろしいですか？
+          <button class="btn danger" data-act="newSession">はじめる</button>
+          <button class="btn" id="newSessionCancel">やめる</button>
+        </div>
+        <div class="card flush"><div class="tablewrap"><table id="htable"></table></div></div>
+      </div>
+    </section>
+
+    <!-- オーバーレイ -->
+    <section class="view" id="v-overlay">
+      <div class="page wide">
+        <h2>配信オーバーレイ</h2>
+        <p class="lead">OBS の「ソース追加 → ブラウザ」に下の URL を貼り、幅 1920・高さ 1080 にしてください。背景は透過です。</p>
+        <div class="ovwrap">
+          <div class="stagewrap"><div class="stagebg">GAME SCREEN</div><iframe id="ovFrame" title="オーバーレイのプレビュー"></iframe></div>
+          <div class="col">
+            <div class="card">
+              <h4>OBS 用 URL</h4>
+              <div class="urlbox"><input readonly id="ovUrl"><button class="btn sm" id="copyOv">コピー</button></div>
+              <p class="small err" id="serverErr"></p>
+              <button class="btn sm" data-act="openOverlay">ブラウザで開く</button>
+            </div>
+            <div class="card">
+              <h4>表示する項目</h4>
+              <label class="field chk"><input type="checkbox" data-ov="match"> 現在の対戦</label>
+              <label class="field chk"><input type="checkbox" data-ov="queue"> 待機列（上位5人）</label>
+              <label class="field chk"><input type="checkbox" data-ov="join"> 参加方法</label>
+              <label class="field chk"><input type="checkbox" data-ov="maskId"> ゲーム内IDを伏せる（先頭3文字のみ）</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 設定 -->
+    <section class="view" id="v-settings">
+      <div class="page">
+        <h2>設定</h2>
+        <div class="grid2">
+          <div class="card span2">
+            <h4>YouTube 接続</h4>
+            <div id="ytSetup">
+              <p class="small mute">初回のみ、Google Cloud で「OAuth クライアント ID（デスクトップアプリ）」を作成して貼り付けてください。手順は <code>docs/youtube-setup.md</code> を参照。</p>
+              <div class="field"><label>クライアント ID</label><input id="ytClientId" class="grow" autocomplete="off"></div>
+              <div class="field"><label>クライアント シークレット</label><input id="ytClientSecret" type="password" class="grow" placeholder="保存済みの場合は空欄のままで OK" autocomplete="off"></div>
+              <div class="field"><label></label><button class="btn" id="ytSaveClient">保存</button></div>
+            </div>
+            <div class="field"><label>アカウント</label><span id="ytAccount"></span>
+              <span class="spacer"></span>
+              <button class="btn primary" data-act="ytLogin" id="ytLoginBtn">Google でログイン</button>
+              <button class="btn" data-act="ytLogout" id="ytLogoutBtn">ログアウト</button>
+            </div>
+            <div id="ytStreamBox">
+              <div class="field"><label>対象の配信</label>
+                <select id="ytBroadcasts" class="grow"><option value="">（「配信を探す」を押してください）</option></select>
+                <button class="btn" id="ytFind">配信を探す</button>
+              </div>
+              <div class="field"><label>URL から指定</label><input id="ytVideo" class="grow" placeholder="https://www.youtube.com/watch?v=... または /live/..."><button class="btn" id="ytResolve">読み込む</button></div>
+              <div class="field"><label>チャット</label><span id="ytChatStatus"></span><span class="spacer"></span>
+                <button class="btn primary" id="ytConnect">チャットに接続</button>
+                <button class="btn" data-act="ytDisconnect">切断</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h4>チャット取得・投稿</h4>
+            <div class="field"><label>本日の API 使用量（推定）</label><div class="meter"><i id="quotaBar"></i></div><span class="small mute" id="quotaText"></span></div>
+            <div class="field"><label>取得間隔の下限</label><select id="ytMinPoll"><option value="3">3 秒</option><option value="5">5 秒</option><option value="10">10 秒</option><option value="15">15 秒</option><option value="20">20 秒</option></select></div>
+            <div class="field"><label>投稿の最低間隔</label><select data-set="post.minIntervalSec" data-type="num"><option value="5">5 秒</option><option value="10">10 秒</option><option value="20">20 秒</option><option value="30">30 秒</option><option value="60">60 秒</option></select></div>
+            <div class="field"><label>受付などの返信</label><select data-set="post.replies"><option value="batch">まとめて投稿</option><option value="each">1件ずつ返信</option><option value="none">返信しない</option></select></div>
+            <p class="small mute">既定の API 上限は 1 日 10,000。取得 1 回 ≒ 5、投稿 1 回 ≒ 50 を目安に表示しています。</p>
+          </div>
+          <div class="card">
+            <h4>コマンド（カンマ区切りで別名）</h4>
+            <div class="field"><label>参加</label><input class="grow" data-set="commands.join" data-type="list"></div>
+            <div class="field"><label>辞退</label><input class="grow" data-set="commands.leave" data-type="list"></div>
+            <div class="field"><label>順番確認</label><input class="grow" data-set="commands.position" data-type="list"></div>
+            <div class="field"><label>ID 修正</label><input class="grow" data-set="commands.changeId" data-type="list"></div>
+          </div>
+          <div class="card span2">
+            <h4>投稿テンプレート</h4>
+            <p class="small mute">変数：{no} 試合番号 {p1} {p2} 対戦者 {next} 次の人 {name} 相手の名前 {id} ゲーム内ID {pos} 順番 {cmd} 参加コマンド</p>
+            <div class="tplgrid" id="tplGrid"></div>
+          </div>
+          <div class="card">
+            <h4>ローカルサーバ</h4>
+            <div class="field"><label>ポート</label><input type="number" min="1024" max="65535" data-set="server.port" data-type="num" class="w90"></div>
+            <p class="small mute">OBS オーバーレイと Google ログインの戻り先に使います。変更した場合は OBS の URL も変更してください。</p>
+          </div>
+          <div class="card future">
+            <h4>勝敗の自動判定 <span class="tag">将来</span></h4>
+            <p class="small mute">OBS から配信画面を取得し、リザルト画面を画像認識して勝敗を自動入力する予定です。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
