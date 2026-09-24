@@ -155,7 +155,13 @@ const actions = {
   coopEnd: (result) => engine.coopEnd(result),
   coopDeath: (key) => engine.coopDeath(key),
   coopRefill: () => engine.coopRefill(),
-  setTarget: (text) => engine.setTarget(text),
+  setTarget: (text) => {
+    const ok = engine.setTarget(text);
+    // まだコピーしていない告知候補があれば、新しいボス名・ミッション名で作り直す
+    const pending = candidates.items.find((c) => c.kind === 'announce' && !c.copied);
+    if (ok && pending && engine.announceText()) candidates.add('announce', engine.announceText());
+    return ok;
+  },
   cancelMatch: () => engine.cancelMatch(),
   startNext: () => engine.startNext(),
   postAnnounce: () => {
@@ -260,7 +266,9 @@ app.whenReady().then(async () => {
   createWindow();
   // 開発用：自動操作してスクリーンショットを撮る（scripts/smoke.js）
   if (process.env.MATCHQUEUE_SMOKE) {
-    require(path.join(__dirname, '..', '..', 'scripts', 'smoke.js'))({ app, win, actions, engine, server });
+    const script = process.env.MATCHQUEUE_SMOKE_SCRIPT || 'smoke.js';
+    const clearChat = () => { chatLog.length = 0; candidates.clear(); pushToUi(); };
+    require(path.join(__dirname, '..', '..', 'scripts', script))({ app, win, actions, engine, server, clearChat });
   }
 });
 

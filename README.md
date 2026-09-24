@@ -7,11 +7,13 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
 
 <p align="center">
   <a href="https://github.com/kijitora-no-hito/matchqueue/releases/latest/download/MatchQueue-Setup.exe">
-    <img alt="Windows版をダウンロード" src="https://img.shields.io/github/v/release/kijitora-no-hito/matchqueue?style=for-the-badge&label=Windows%E7%89%88%E3%82%92%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89&color=0550ae&labelColor=0969da&logo=windows&logoColor=white" height="64">
+    <img alt="Windows版をダウンロード" src="https://img.shields.io/github/v/release/kijitora-no-hito/matchqueue?style=for-the-badge&label=Windows%E7%89%88%E3%82%92%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89&color=0550ae&labelColor=0969da&logo=windows&logoColor=white" height="128">
   </a>
   <br>
-  <sub>ボタンを押すとインストーラ（MatchQueue-Setup.exe）がダウンロードされます。使い方は下の「<a href="#インストール">インストール</a>」を見てください。</sub>
+  <sub>ボタンを押すとインストーラ（MatchQueue-Setup.exe）がダウンロードされます。インストール方法は<a href="#インストール">こちら</a></sub>
 </p>
+
+<p align="center"><b>📖 <a href="docs/guide.md">使い方ガイド</a></b> — ゲーム別のおすすめ設定、配信中の操作、視聴者への案内文</p>
 
 ![進行画面（対戦）](docs/images/versus.png)
 
@@ -45,6 +47,19 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
 
 ## 使い方
 
+配信中の使い方は **[使い方ガイド](docs/guide.md)** にまとめています。
+
+- [1対1の対戦ゲーム（視聴者同士）](docs/guide.md#a-1対1の対戦ゲーム視聴者同士)
+- [視聴者があなたに挑戦する（1対1）](docs/guide.md#b-視聴者があなたに挑戦する1対1)
+- [2対2 の対戦ゲーム](docs/guide.md#c-2対2-の対戦ゲーム)
+- [エルデンリング / ダークソウル（協力プレイ）](docs/guide.md#d-エルデンリング--ダークソウル協力プレイ)
+- [地球防衛軍（協力プレイ）](docs/guide.md#e-地球防衛軍協力プレイ)
+- [視聴者への案内文（コピーして使えます）](docs/guide.md#視聴者への案内文コピーして使えます)
+
+## セットアップ（初回だけ）
+
+### チャットの読み取り方法を選ぶ
+
 チャットの読み取り方法は次の 3 通りから選べます。
 
 | 方法 | 準備 | チャットからの参加受付 | チャットへの自動投稿 |
@@ -67,7 +82,7 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
 - **OBS オーバーレイのお知らせ**：受付の返信（「受付しました」「ID を付けてください」など）を配信画面に表示
 - **チャット投稿候補**：告知や返信の文面が進行画面に並ぶので、「コピー」して YouTube のチャットに貼り付け。貼った文面がチャットに流れると候補から自動で消えます。新しい候補が出ると通知音が鳴ります（設定で ON/OFF・音量）
 
-※ プラグインにはわんコメ 5.2 以降が必要です（4.x 以前には プラグイン機能がありません）。
+※ プラグインにはわんコメ 5.2 以降が必要です（4.x 以前にはプラグイン機能がありません）。
 
 ### YouTube Data API（任意・上級者向け）
 
@@ -82,14 +97,6 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
 ### OBS オーバーレイ
 
 「配信オーバーレイ」画面の URL（既定 `http://127.0.0.1:17800/overlay`）を、OBS の「ソース追加 → ブラウザ」に貼り、幅 1920・高さ 1080 にします。
-
-### ショートカット（進行画面）
-
-| キー | 対戦 | 協力プレイ |
-|---|---|---|
-| `1` | 左の勝ち | ボス撃破 / クリア |
-| `2` | 右の勝ち | 全滅 / 失敗 |
-| `Ctrl` + `Z` | 取り消し | 取り消し |
 
 ## 開発
 

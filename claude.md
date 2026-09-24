@@ -58,6 +58,7 @@ YouTube でのゲーム配信中に行う「視聴者参加型ルームマッチ
 - `npm start` — 開発起動（`scripts/start.js` 経由。ELECTRON_RUN_AS_NODE が残る環境対策）
 - `npm test` — ユニットテスト（node:test、`test/*.test.js`）
 - `npm run smoke` — 一時データで自動操作し `.smoke/` に各画面のスクリーンショットを保存（UI 変更後の確認用）
+- `npm run guide-shots` — 使い方ガイド（`docs/guide.md`）用のスクリーンショットを `docs/images/guide/` に撮り直す（`scripts/guide-shots.js`）。UI を変えたら実行
 - `npm run dist` — Windows インストーラ生成（`dist/MatchQueue Setup x.y.z.exe`）
 
 ## 構成
@@ -73,6 +74,7 @@ YouTube でのゲーム配信中に行う「視聴者参加型ルームマッチ
 - `src/renderer/` — 管理画面（素の HTML/JS、CSP あり、インラインスクリプト不可）
 - `src/overlay/overlay.html` — OBS ブラウザソース用（1920×1080、透過）
 - `docs/concept.md` — 検討資料 / `docs/youtube-setup.md` — Google Cloud 初期設定手順（ユーザー向け）
+- `docs/guide.md` — 使い方ガイド（配信者向け。ゲーム別の設定・配信中の操作・視聴者への案内文）。README はセットアップ中心、配信中の使い方はこちら
 - 初期のイメージ画面（`mockups/`）は 2026-09-24 に削除（git 履歴には残っている）
 
 ## 実装上の注意

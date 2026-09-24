@@ -1,3 +1,5 @@
 node_modules/
 dist/
 .smoke/
+.guide/
+docs/images/guide/result.json
