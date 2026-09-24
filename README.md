@@ -7,7 +7,7 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
 
 <p align="center">
   <a href="https://github.com/kijitora-no-hito/matchqueue/releases/latest/download/MatchQueue-Setup.exe">
-    <img alt="Windows版をダウンロード" src="https://img.shields.io/github/v/release/kijitora-no-hito/matchqueue?style=for-the-badge&label=Windows%E7%89%88%E3%82%92%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89&color=0550ae&labelColor=0969da&logo=windows&logoColor=white" height="128">
+    <img alt="Windows版をダウンロード" src="https://img.shields.io/github/v/release/kijitora-no-hito/matchqueue?style=for-the-badge&label=Windows%E7%89%88%E3%82%92%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89&color=0550ae&labelColor=0969da&logo=windows&logoColor=white" width="720">
   </a>
   <br>
   <sub>ボタンを押すとインストーラ（MatchQueue-Setup.exe）がダウンロードされます。インストール方法は<a href="#インストール">こちら</a></sub>

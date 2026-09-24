@@ -1,7 +1,7 @@
 {
   "name": "matchqueue",
   "productName": "MatchQueue",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "YouTube 配信の視聴者参加型ルームマッチ進行管理ツール",
   "main": "src/main/main.js",
   "private": true,
