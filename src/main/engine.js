@@ -58,6 +58,7 @@ const DEFAULT_SETTINGS = {
     replies: 'batch', // batch | each | none
   },
   overlay: { match: true, queue: true, join: true, maskId: false, notices: true },
+  sound: { candidate: true, volume: 0.5 }, // チャット投稿候補が増えた時の通知音
   server: { port: 17800 },
   tpl: {
     next: '【第{no}試合】{p1} vs {p2} 準備お願いします！ 次は {next} さん',

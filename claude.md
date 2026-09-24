@@ -30,7 +30,11 @@ YouTube でのゲーム配信中に行う「視聴者参加型ルームマッチ
   - `src/onecomme/plugin.js`（テンプレート）を `%APPDATA%\onecomme\plugins\matchqueue\plugin.js` にポートとトークンを埋めて配置
   - プラグインは `subscribe('comments', {comments})` で新着コメントを受け、`POST /onecomme/comments`（`X-MatchQueue-Token` 必須）で転送。30秒ごとに `/onecomme/hello`
   - 投稿はできないので、受付などの返信はオーバーレイにお知らせ表示（`settings.overlay.notices`、SSE の `event: notice`）
-  - **本物のわんコメでの動作は未検証**（開発 PC にわんコメなし）。テストはわんコメの呼び出しを模擬している
+  - 2026-09-24 オーナー環境（わんコメ 9.1.2）で連携成功を確認。わんコメ 4.x には plugin 機能がない（データは `%APPDATA%\live-comment-viewer`）
+  - わんコメ 9.x ではプラグインの有効化は「プラグイン」画面（「連携」画面とは別）で行う
+- 2026-09-24 チャット投稿候補（`src/main/candidates.js`）：YouTube API で投稿できない時は告知・返信を候補に並べ、配信者がコピーして手で貼る。
+  貼った文面がチャットに流れてきたら（空白・全角半角を無視して一致）候補から自動で消す。進行画面の右列（ライブチャットの上）に表示
+  - 新しい候補が出たら通知音（Web Audio で生成、`settings.sound.candidate` / `volume`）。`npm run smoke` は `window.chimeCount` で鳴ったことを確認
 - 2026-09-24 公開リポジトリから `mockups/` を削除
 
 ## 公開・リリース手順

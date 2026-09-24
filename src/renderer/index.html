@@ -80,9 +80,10 @@
           <h3 id="nextTitle">この先の対戦</h3>
           <div class="pbody"><div class="next" id="next"></div></div>
         </div>
-        <div class="panel grow">
+        <!-- YouTube API で投稿できる時 -->
+        <div class="panel grow" id="apiPost">
           <h3>YouTube への告知
-            <label class="r small chk"><input type="checkbox" id="autoPost"> 対戦が決まったら自動投稿</label>
+            <label class="r small chk"><input type="checkbox" data-autopost> 対戦が決まったら自動投稿</label>
           </h3>
           <div class="pbody">
             <div class="botprev" id="botPrev"></div>
@@ -92,7 +93,20 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="col">
+      <!-- 投稿できない時（わんコメ連携など）：コピーして手でチャットに貼る -->
+      <div class="panel candpanel" id="copyPost" hidden>
+        <h3><span id="candTitle">チャット投稿候補</span>
+          <label class="r small chk" title="新しい候補が出たら音で知らせる"><input type="checkbox" data-set="sound.candidate" data-type="bool" class="soundchk"> 音</label>
+          <label class="small chk" title="対戦・パーティーが決まったら告知文を候補に出す"><input type="checkbox" data-autopost> 告知も出す</label>
+          <button class="btn sm" data-act="clearCandidates">すべて消す</button>
+        </h3>
+        <div class="pbody">
+          <div class="small mute candnote">コピーして YouTube のチャットに貼り付け。貼られたものは自動で消えます。</div>
+          <ul class="cands" id="candList"></ul>
+        </div>
+      </div>
+      <div class="panel grow">
         <h3><span class="ytdot">●</span> ライブチャット <span class="r tag" id="chatInfo">未接続</span></h3>
         <div class="pbody" id="chatBox"><div class="chat" id="chat"></div></div>
         <form class="testchat" id="testForm" title="YouTube を使わずにコマンドの動作を試せます">
@@ -100,6 +114,7 @@
           <input id="testText" placeholder="例: !参加 ABC123" autocomplete="off">
           <button class="btn sm" type="submit">テスト送信</button>
         </form>
+      </div>
       </div>
     </section>
 
@@ -219,7 +234,7 @@
             </div>
             <ol class="small steps">
               <li>わんコメを起動した状態で「わんコメにプラグインを入れる」を押す</li>
-              <li>わんコメの「メニュー（≡）→ 連携 → プラグイン」で「MatchQueue 連携」を有効にする（表示されない場合はわんコメを再起動）</li>
+              <li>わんコメの「プラグイン」画面（「連携」画面とは別）で「MatchQueue 連携」のスイッチをオンにする（出てこない場合は「再読み込み」かわんコメを再起動）</li>
               <li>わんコメで配信のコメント取得を開始すると、ここが「受信中」になります</li>
             </ol>
           </div>
@@ -253,6 +268,11 @@
             <div class="field"><label>本日の API 使用量（推定）</label><div class="meter"><i id="quotaBar"></i></div><span class="small mute" id="quotaText"></span></div>
             <div class="field"><label>取得間隔の下限</label><select id="ytMinPoll"><option value="3">3 秒</option><option value="5">5 秒</option><option value="10">10 秒</option><option value="15">15 秒</option><option value="20">20 秒</option></select></div>
             <div class="field"><label>投稿の最低間隔</label><select data-set="post.minIntervalSec" data-type="num"><option value="5">5 秒</option><option value="10">10 秒</option><option value="20">20 秒</option><option value="30">30 秒</option><option value="60">60 秒</option></select></div>
+            <div class="field"><label>投稿候補の通知音</label>
+              <label class="chk"><input type="checkbox" data-set="sound.candidate" data-type="bool" class="soundchk"> 鳴らす</label>
+              <input type="range" min="0.05" max="1" step="0.05" data-set="sound.volume" data-type="num" title="音量">
+              <button class="btn sm" id="soundTest">試しに鳴らす</button>
+            </div>
             <div class="field"><label>受付などの返信</label><select data-set="post.replies"><option value="batch">まとめて投稿</option><option value="each">1件ずつ返信</option><option value="none">返信しない</option></select></div>
             <p class="small mute">既定の API 上限は 1 日 10,000。取得 1 回 ≒ 5、投稿 1 回 ≒ 50 を目安に表示しています。</p>
           </div>

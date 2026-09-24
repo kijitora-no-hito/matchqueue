@@ -82,6 +82,20 @@ module.exports = async function smoke({ app, win, actions, engine }) {
     await sleep(1200); await shot('17-overlay-notice');
     await view('settings'); await sleep(300); await shot('18-settings-onecomme');
     await view('dash'); await shot('19-dash-onecomme');
+    // 新しい投稿候補で通知音が鳴る（回数で確認）
+    const chimes0 = await win.webContents.executeJavaScript('window.chimeCount || 0');
+    plugin.subscribe('comments', { comments: [c('oc3', 'UC_oc3', 'わんコメ次郎', '!参加 jiro_3')] });
+    await sleep(800);
+    const chimes1 = await win.webContents.executeJavaScript('window.chimeCount || 0');
+    if (chimes1 <= chimes0) throw new Error('新しい投稿候補で通知音が鳴っていない');
+    // 配信者が投稿候補をコピーしてチャットに貼った → わんコメ経由で流れてきたら候補から消える
+    const pasted = await win.webContents.executeJavaScript(`document.querySelector('#candList .ct') && document.querySelector('#candList .ct').textContent`);
+    const before = await win.webContents.executeJavaScript(`document.querySelectorAll('#candList li:not(.empty)').length`);
+    plugin.subscribe('comments', { comments: [{ service: 'youtube', data: { id: 'oc-host', userId: 'UC_host', name: '配信者', comment: pasted, isOwner: true, timestamp: String(Date.now()) } }] });
+    await sleep(800);
+    const after = await win.webContents.executeJavaScript(`document.querySelectorAll('#candList li:not(.empty)').length`);
+    if (after !== before - 1) throw new Error(`貼り付け後に候補が消えていない: ${before} → ${after}`);
+    await shot('20-dash-pasted');
     plugin.destroy();
 
     fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ ok: true, errors }, null, 2));

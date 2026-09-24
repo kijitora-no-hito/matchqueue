@@ -282,18 +282,73 @@ function renderNext() {
     + (pv.note ? `<div class="note">${esc(pv.note)}</div>` : '');
 }
 
+const CAND_KIND = { announce: '告知', reply: '返信' };
+
+// 通知音（音声ファイルを使わず Web Audio で「ピンポン」と鳴らす）
+let audioCtx = null;
+function chime() {
+  window.chimeCount = (window.chimeCount || 0) + 1; // 動作確認用（scripts/smoke.js）
+  try {
+    audioCtx = audioCtx || new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const vol = Math.max(0, Math.min(1, Number(S.settings.sound.volume) || 0.5)) * 0.4;
+    [[880, 0], [1320, 0.13]].forEach(([freq, delay]) => {
+      const t = audioCtx.currentTime + delay;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.4);
+    });
+  } catch { /* 音が出せない環境では何もしない */ }
+}
+
+// 新しい投稿候補が増えたら鳴らす（起動直後の既存分では鳴らさない）
+let lastCandId = null;
+function checkNewCandidates() {
+  const maxId = S.candidates.reduce((m, c) => Math.max(m, c.id), 0);
+  if (lastCandId !== null && maxId > lastCandId && !S.canPost && S.settings.sound.candidate) chime();
+  lastCandId = Math.max(lastCandId || 0, maxId);
+}
+
 function renderBot() {
-  $('#autoPost').checked = S.settings.autoPost;
+  checkNewCandidates();
+  const canPost = S.canPost;
+  $$('[data-autopost]').forEach((cb) => { cb.checked = S.settings.autoPost; });
+  $('#candTitle').textContent = `投稿候補${S.candidates.length ? `（${S.candidates.length}）` : ''}`;
+  $('#apiPost').hidden = !canPost;
+  $('#copyPost').hidden = canPost;
+  if (!canPost) {
+    $('#candList').innerHTML = S.candidates.length
+      ? S.candidates.slice().reverse().map((c) => `<li class="${c.copied ? 'copied' : ''}">
+          <span class="tag ${c.kind === 'announce' ? 'bot' : 'join'}">${CAND_KIND[c.kind] || c.kind}</span>
+          <span class="ct">${esc(c.text)}</span>
+          <button class="btn sm${c.copied ? '' : ' primary'}" data-act="copyCandidate" data-args="[${c.id}]">${c.copied ? 'もう一度コピー' : 'コピー'}</button>
+          <button class="x" title="候補から消す" data-act="removeCandidate" data-args="[${c.id}]">✕</button></li>`).join('')
+      : '<li class="empty">投稿候補はありません。対戦が決まったり受付の返信が出ると、ここに並びます。</li>';
+    return;
+  }
   $('#botPrev').textContent = S.announceText || '対戦が決まると、ここに告知文が表示されます。';
-  const canPost = S.youtube.chat.state === 'connected';
-  $('#botInfo').textContent = !canPost ? (S.onecomme.connected ? 'わんコメ連携ではチャットに投稿できません（受付の返信はオーバーレイに表示）' : 'YouTube API でチャットに接続すると投稿されます') : (S.settings.autoPost ? '対戦が決まると自動で投稿します' : '手動投稿モード') + (S.botPending ? `・送信待ち ${S.botPending} 件` : '');
+  $('#botInfo').textContent = (S.settings.autoPost ? '対戦が決まると自動で投稿します' : '手動投稿モード') + (S.botPending ? `・送信待ち ${S.botPending} 件` : '');
   $('#botLog').innerHTML = S.botLog.slice(0, 6).map((l) => `<li title="${esc(l.note || l.text)}"><span>${hhmm(l.at)}</span><span class="s-${l.status}">${LOG_STATUS[l.status] || l.status}</span><span>${esc(l.text)}</span></li>`).join('');
 }
 
 let chatLastId = -1;
+// 自分で上にスクロールしていない限り、最新のチャットに追従する
+let chatStick = true;
+$('#chatBox').addEventListener('scroll', () => {
+  const box = $('#chatBox');
+  chatStick = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+});
+new ResizeObserver(() => { if (chatStick) $('#chatBox').scrollTop = $('#chatBox').scrollHeight; }).observe($('#chatBox'));
 function renderChat() {
   const box = $('#chatBox');
-  const stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+  const stick = chatStick;
   const y = S.youtube.chat;
   $('#chatInfo').textContent = S.onecomme.connected && y.state !== 'connected' ? 'わんコメから受信中'
     : { idle: '未接続', connecting: '接続中…', connected: 'コマンド検出中', ended: '配信終了', error: 'エラー' }[y.state] || y.state;
@@ -358,7 +413,8 @@ function renderModes() {
 function renderSettings() {
   $$('[data-set]').forEach((el) => {
     const v = getPath(S.settings, el.dataset.set);
-    fillIfIdle(el, Array.isArray(v) ? v.join(', ') : String(v));
+    if (el.type === 'checkbox') el.checked = !!v;
+    else fillIfIdle(el, Array.isArray(v) ? v.join(', ') : String(v));
   });
   fillIfIdle($('#ytMinPoll'), String(S.youtube.minPollSec));
 }
@@ -396,9 +452,10 @@ const after = {
   result: (r) => { if (r.value && r.value.streakOut) toast(`${r.value.streakOut.name} さん ${r.value.streakOut.streak}連勝で交代！`); },
   undo: (r) => { if (r.value === false) toast('取り消せる操作がありません'); else if (!r.error) toast('取り消しました'); },
   postAnnounce: (r) => { if (r.value && !r.value.ok) toast(r.value.message); else if (r.value) toast('告知を送信キューに入れました'); },
+  copyCandidate: (r) => { if (r.value) toast('コピーしました。YouTube のチャットに貼り付けてください'); },
   exportCsv: (r) => { if (r.value) toast(`保存しました：${r.value}`); },
   newSession: () => { $('#newSessionConfirm').hidden = true; toast('新しい配信回を始めました'); },
-  ocInstall: (r) => { if (!r.error) toast('プラグインを入れました。わんコメの「連携 → プラグイン」で有効にしてください'); },
+  ocInstall: (r) => { if (!r.error) toast('プラグインを入れました。わんコメの「プラグイン」画面でスイッチをオンにしてください'); },
   ytLogin: (r) => { if (!r.error) toast('ブラウザで Google にログインしてください'); },
   startNext: (r) => { if (r.value === false) toast('参加者が足りません'); },
 };
@@ -457,7 +514,7 @@ $('#acceptSw').addEventListener('click', async () => {
   await act('updateSettings', { accepting: on });
   toast(on ? '参加受付を開始しました' : '参加受付を締め切りました');
 });
-$('#autoPost').addEventListener('change', (e) => act('updateSettings', { autoPost: e.target.checked }));
+$$('[data-autopost]').forEach((cb) => cb.addEventListener('change', (e) => act('updateSettings', { autoPost: e.target.checked })));
 
 $('#manualForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -480,6 +537,8 @@ $('#testForm').addEventListener('submit', async (e) => {
 $('#targetInput').addEventListener('change', (e) => act('setTarget', e.target.value));
 $('#targetInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
 
+$('#soundTest').addEventListener('click', () => chime());
+
 $('#newSessionBtn').addEventListener('click', () => { $('#newSessionConfirm').hidden = false; });
 $('#newSessionCancel').addEventListener('click', () => { $('#newSessionConfirm').hidden = true; });
 $('#copyOv').addEventListener('click', async () => { await act('copy', $('#ovUrl').value); toast('コピーしました'); });
@@ -489,7 +548,8 @@ document.addEventListener('change', async (e) => {
   const el = e.target;
   if (el.dataset.set) {
     let v = el.value;
-    if (el.dataset.type === 'num') { v = Number(v); if (!Number.isFinite(v)) return; }
+    if (el.type === 'checkbox') v = el.checked;
+    else if (el.dataset.type === 'num') { v = Number(v); if (!Number.isFinite(v)) return; }
     else if (el.dataset.type === 'bool') v = v === 'true';
     else if (el.dataset.type === 'list') { v = v.split(/[,、]/).map((s) => s.trim()).filter(Boolean); if (!v.length) return render(); }
     await act('updateSettings', setPath(el.dataset.set, v));

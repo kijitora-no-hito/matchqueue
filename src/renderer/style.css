@@ -163,6 +163,17 @@ h3.sec{font-size:13px;color:var(--mute);margin:18px 0 8px;font-weight:600}
 
 .botprev{background:var(--bot);border:1px solid #5a4816;border-radius:10px;padding:10px 12px;font-size:13px;min-height:42px}
 .botrow{display:flex;align-items:center;gap:10px;margin-top:10px}
+.candpanel{flex:0 1 45%;min-height:160px}
+.candpanel>h3{white-space:nowrap}
+.candpanel>h3 .chk{white-space:nowrap}
+.candnote{margin-bottom:8px}
+.cands{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.cands li{display:flex;align-items:center;gap:8px;background:var(--bot);border:1px solid #5a4816;border-radius:8px;padding:6px 8px 6px 10px;font-size:13px}
+.cands li.copied{opacity:.6;border-style:dashed}
+.cands .ct{flex:1;min-width:0;word-break:break-word}
+.cands .btn{flex:none}
+.cands .x{background:none;border:0;color:var(--mute);padding:0 4px}
+.cands .empty{background:none;border:1px dashed var(--line);color:var(--mute);justify-content:center}
 .botlog{list-style:none;margin:10px 0 0;padding:0;font-size:12px;display:flex;flex-direction:column;gap:3px}
 .botlog li{display:flex;gap:8px;color:var(--mute);white-space:nowrap;overflow:hidden}
 .botlog li span:last-child{overflow:hidden;text-overflow:ellipsis}

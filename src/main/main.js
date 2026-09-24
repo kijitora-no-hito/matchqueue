@@ -8,6 +8,7 @@ const { Poster } = require('./poster');
 const { LocalServer } = require('./server');
 const { YouTube } = require('./youtube');
 const { OneComme } = require('./onecomme');
+const { Candidates } = require('./candidates');
 
 // 開発用：データ保存先の切り替え（動作確認で本番データを汚さないため）
 if (process.env.MATCHQUEUE_USERDATA) app.setPath('userData', process.env.MATCHQUEUE_USERDATA);
@@ -17,6 +18,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 let win = null;
 let store, engine, poster, server, yt, oc;
 const chatLog = []; // 画面表示用の直近チャット（保存しない）
+const candidates = new Candidates(); // 手でコピペするチャット投稿候補（YouTube API で投稿できない時）
 
 // ---------- 画面への送信 ----------
 let pushTimer = null;
@@ -33,6 +35,8 @@ function snapshot() {
     botPending: poster.pending(),
     youtube: yt.status(),
     onecomme: oc.status(),
+    canPost: yt.canPost(),
+    candidates: candidates.items,
     server: { url: server.baseUrl(), error: server.error },
   };
 }
@@ -94,13 +98,13 @@ async function init() {
     pushToUi();
   });
   engine.on('post', ({ kind, text }) => {
-    // 未接続時は実際には送られないので、画面上だけで返答内容を見せる
-    if (!yt.canPost()) addChat({ name: 'MatchQueue（チャット未投稿）', text, kind: 'bot' });
     // 受付などの返信はオーバーレイにも出す（わんコメ連携のようにチャットへ投稿できない場合の代わり）
     if (kind === 'reply' && engine.settings.overlay.notices) server.notice(text);
-    poster.enqueue(kind, text);
+    if (yt.canPost()) poster.enqueue(kind, text);
+    else candidates.add(kind, text); // 投稿できない時は、配信者がコピペできるよう候補に出す
   });
   poster.on('change', pushToUi);
+  candidates.on('change', pushToUi);
   yt.on('status', pushToUi);
   yt.on('message', onChatMessage);
   oc.on('status', pushToUi);
@@ -110,6 +114,8 @@ async function init() {
 
 // YouTube API / わんコメ から届いたチャット1件
 function onChatMessage(m) {
+  // 配信者がコピペした投稿候補がチャットに流れてきたら候補から消す
+  if (candidates.matchPosted(m.text)) { addChat({ name: m.name, text: m.text, kind: 'bot' }); return; }
   if (m.self && /^[@【]/.test(m.text)) { addChat({ name: m.name, text: m.text, kind: 'bot' }); return; }
   const cmd = engine.parseCommand(m.text);
   addChat({ name: m.name, text: m.text, kind: cmd ? 'cmd' : 'normal', tag: cmd && cmd.type, member: m.member, source: m.source });
@@ -130,6 +136,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      autoplayPolicy: 'no-user-gesture-required', // 投稿候補の通知音を操作なしで鳴らすため
     },
   });
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
@@ -152,7 +159,11 @@ const actions = {
   cancelMatch: () => engine.cancelMatch(),
   startNext: () => engine.startNext(),
   postAnnounce: () => {
-    if (!yt.canPost()) return { ok: false, message: 'YouTube のライブチャットに接続していません' };
+    if (!yt.canPost()) {
+      if (!engine.announceText()) return { ok: false, message: '告知する対戦・パーティーがありません' };
+      candidates.add('announce', engine.announceText());
+      return { ok: true, candidate: true };
+    }
     poster.enqueue('announce', engine.announceText());
     return { ok: true };
   },
@@ -200,6 +211,15 @@ const actions = {
   openOverlay: () => server.baseUrl() && shell.openExternal(`${server.baseUrl()}/overlay`),
   copy: (text) => clipboard.writeText(String(text)),
   openExternal: (url) => /^https:\/\//.test(url) && shell.openExternal(url),
+  // チャット投稿候補（コピペ用）
+  copyCandidate: (id) => {
+    const c = candidates.markCopied(Number(id));
+    if (!c) return false;
+    clipboard.writeText(c.text);
+    return true;
+  },
+  removeCandidate: (id) => candidates.remove(Number(id)),
+  clearCandidates: () => candidates.clear(),
   // わんコメ
   ocInstall: () => oc.install(engine.settings.server.port),
   ocOpenFolder: () => {
