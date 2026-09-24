@@ -56,8 +56,8 @@ const CHOICES = {
     el: '#hostPlays',
     items: {
       off: { name: '参加しない', desc: '視聴者同士で対戦。', flow: '' },
+      queue: { name: '列に並ぶ', desc: '視聴者と同じく列に並び、順番が来たら出場。ローテーションなら自分も含めて全員に均等に出番が回る。', flow: 'A vs 配信者 → B vs C → A vs 配信者 …' },
       always: { name: '毎試合出る', desc: 'あなたは毎試合出場。ローテーションなら「あなた vs 列の先頭」（2対2 なら あなた＋先頭 vs 次の2人）。', flow: '配信者 vs A → 配信者 vs B …' },
-      queue: { name: '列に並ぶ', desc: '視聴者と同じく列に並び、順番が来たら出場。', flow: '' },
       champion: { name: '勝ち抜きの王者役', desc: '列の先頭から出場し、勝ち続ける限り連勝上限なしで残る。負けたら列の最後尾へ。', flow: '配信者 vs A → 配信者 vs B → （負け）B vs C …' },
     },
   },

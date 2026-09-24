@@ -158,6 +158,18 @@ test('列に並ぶ: 配信者も普通の参加者として列に入り、負け
   assert.deepEqual(queue(e), []);
 });
 
+test('ローテーション + 列に並ぶ: 配信者も含めて全員が均等に回る', () => {
+  const e = new Engine({ settings: { mode: 'rotation', hostPlay: 'queue' } });
+  joinAll(e, ['a', 'b', 'c']); // 配信者は設定時点では列が空なので、a の参加後に列へ
+  assert.deepEqual(cur(e), ['配信者', 'a']);
+  assert.deepEqual(queue(e), ['b', 'c']);
+  e.result(1);
+  assert.deepEqual(cur(e), ['b', 'c']);
+  assert.deepEqual(queue(e), ['配信者', 'a']);
+  e.result(2);
+  assert.deepEqual(cur(e), ['配信者', 'a']); // 一巡して配信者の番が戻る
+});
+
 test('勝ち抜きの王者役: 配信者は先頭から入り、連勝上限なしで勝ち続けられる', () => {
   const e = new Engine({ settings: { maxStreak: 2 } });
   joinAll(e, ['a', 'b', 'c', 'd']); // a vs b が始まっている

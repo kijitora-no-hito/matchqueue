@@ -57,6 +57,13 @@ module.exports = async function guideShots({ app, win, actions, clearChat }) {
     await say(['ユウ', '!参加 yuu_0']);
     await sleep(600); await shot('versus-overlay');
 
+    // ---------- 1対1 配信者も含めて均等にローテーション（ローテーション＋列に並ぶ） ----------
+    await reset({ format: 'versus', teamSize: 1, mode: 'rotation', hostPlay: 'queue' });
+    await say(['たけのこ隊長', '!参加 Takenoko#1234'], ['sora_gg', '!参加 SORA-77'], ['みけねこ', '!参加 mike_neko']);
+    actions.result(2);
+    await say(['Kenji', '!参加 KNJ_99']);
+    await view('dash'); await shot('host-rotation-dash');
+
     // ---------- 1対1 配信者チャレンジ（ローテーション＋毎試合出る） ----------
     await reset({ format: 'versus', teamSize: 1, mode: 'rotation', hostPlay: 'always' });
     await say(['たけのこ隊長', '!参加 Takenoko#1234'], ['sora_gg', '!参加 SORA-77'], ['みけねこ', '!参加 mike_neko'], ['Kenji', '!参加 KNJ_99']);

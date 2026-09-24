@@ -143,6 +143,7 @@ class Engine extends EventEmitter {
     if (!this.data.players[HOST]) this.data.players[HOST] = freshData(this.settings.hostName).players[HOST];
     migrate(this.settings, this.data);
     this.undoStack = [];
+    if (!saved.data) this._applyHostPlay(); // 初回起動時も「列に並ぶ」等の設定どおりに配信者を列へ
     if (this._isCoop() && !this.data.party) this._newParty();
   }
 
