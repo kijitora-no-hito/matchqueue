@@ -40,6 +40,9 @@ class OneComme extends EventEmitter {
   }
 
   oneCommeDir() { return path.join(this.appData, 'onecomme'); }
+  // わんコメ 4.x 以前のデータフォルダ（プラグイン機能なし。5.2 以降が必要）
+  legacyDir() { return path.join(this.appData, 'live-comment-viewer'); }
+  isLegacyOnly() { return !fs.existsSync(this.oneCommeDir()) && fs.existsSync(this.legacyDir()); }
   pluginDir() { return path.join(this.oneCommeDir(), 'plugins', 'matchqueue'); }
   isInstalled() { return fs.existsSync(path.join(this.pluginDir(), 'plugin.js')); }
 
@@ -50,6 +53,9 @@ class OneComme extends EventEmitter {
   }
 
   install(port) {
+    if (this.isLegacyOnly()) {
+      throw new Error('古いわんコメ（4.x 以前）が見つかりました。プラグイン機能はわんコメ 5.2 以降で使えます。わんコメを最新版に更新して一度起動してから試してください');
+    }
     if (!fs.existsSync(this.oneCommeDir())) {
       throw new Error('わんコメが見つかりません（%APPDATA%\\onecomme がありません）。わんコメを一度起動してから試してください');
     }
@@ -70,6 +76,7 @@ class OneComme extends EventEmitter {
     return {
       installed: this.isInstalled(),
       oneCommeFound: fs.existsSync(this.oneCommeDir()),
+      legacyOnly: this.isLegacyOnly(),
       connected: last > 0 && now - last < ALIVE_MS,
       lastSeenAt: last ? new Date(last).toISOString() : null,
       lastCommentAt: this.lastCommentAt ? new Date(this.lastCommentAt).toISOString() : null,

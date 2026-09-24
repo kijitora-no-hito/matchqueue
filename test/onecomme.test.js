@@ -90,6 +90,15 @@ test('わんコメがない PC ではインストールできない', () => {
   assert.equal(oc.status().oneCommeFound, false);
 });
 
+test('わんコメ 4.x しかない場合は更新を促す', () => {
+  const dir = tmpDir();
+  const appData = path.join(dir, 'appdata');
+  fs.mkdirSync(path.join(appData, 'live-comment-viewer'), { recursive: true });
+  const oc = new OneComme({ store: new Store(path.join(dir, 'ud')), appData });
+  assert.equal(oc.status().legacyOnly, true);
+  assert.throws(() => oc.install(17800), /5\.2 以降/);
+});
+
 test('プラグインにはポートとトークンが書き込まれる', () => {
   const { oc } = setup();
   const src = oc.renderPlugin(18000);

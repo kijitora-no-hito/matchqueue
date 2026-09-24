@@ -149,6 +149,7 @@ function renderOneComme() {
   if (o.connected) st = `<span class="ok">● 受信中</span>（最終 ${hhmm(o.lastSeenAt)}・受信 ${o.count} 件${o.pluginVersion ? `・プラグイン v${esc(o.pluginVersion)}` : ''}）`;
   else if (o.installed) st = 'プラグインは入っています。わんコメ側で有効にし、わんコメを起動してください';
   else if (o.oneCommeFound) st = 'プラグイン未インストール';
+  else if (o.legacyOnly) st = '<span class="err">古いわんコメ（4.x 以前）です。プラグイン機能はわんコメ 5.2 以降で使えるため、最新版に更新してください</span>';
   else st = 'わんコメが見つかりません（インストールして一度起動してください）';
   $('#ocStatus').innerHTML = st;
   $('#ocInstallBtn').textContent = o.installed ? 'プラグインを入れ直す' : 'わんコメにプラグインを入れる';
