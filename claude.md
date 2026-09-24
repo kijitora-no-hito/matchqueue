@@ -37,6 +37,9 @@ YouTube でのゲーム配信中に行う「視聴者参加型ルームマッチ
   - 新しい候補が出たら通知音（Web Audio で生成、`settings.sound.candidate` / `volume`）。`npm run smoke` は `window.chimeCount` で鳴ったことを確認
 - 2026-09-24 公開リポジトリから `mockups/` を削除
 - 2026-09-24 v0.2.0 を Releases に掲載（わんコメ連携・チャット投稿候補・通知音）。オーナー環境で動作確認済み
+- 2026-09-24 v0.2.1 を Releases に掲載（使い方ガイド、ボス名変更時の告知候補作り直し）
+  - README のダウンロードボタンは GitHub が `height` を無効化する（`height:auto` を付ける）ため `width` で大きさを指定する
+  - オーナーの D ドライブが空き容量ほぼ 0 になることがある。ビルドは `--config.directories.output=<C: の作業フォルダ>` で C に出力すると安全
 
 ## 公開・リリース手順
 
