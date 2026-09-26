@@ -57,7 +57,26 @@ const DEFAULT_SETTINGS = {
     minIntervalSec: 10,
     replies: 'batch', // batch | each | none
   },
-  overlay: { match: true, queue: true, join: true, maskId: false, notices: true },
+  overlay: {
+    match: true, queue: true, join: true, maskId: false, notices: true,
+    // 配置（1920×1080 上の基準点の座標と拡大率）。基準点は要素ごとに決まっている（overlay.html の ANCHORS）
+    layout: {
+      join: { x: 40, y: 40, scale: 1 },
+      queue: { x: 1880, y: 40, scale: 1 },
+      match: { x: 960, y: 1030, scale: 1 },
+      notices: { x: 40, y: 150, scale: 1 },
+    },
+    // 見た目。font が空なら標準フォント
+    style: {
+      font: '',
+      accent: '#f5b62a',
+      p1: '#3d8bff',
+      p2: '#ff4d5e',
+      text: '#ffffff',
+      panel: '#000000',
+      panelAlpha: 0.7,
+    },
+  },
   sound: { candidate: true, volume: 0.5 }, // チャット投稿候補が増えた時の通知音
   server: { port: 17800 },
   tpl: {
@@ -732,6 +751,7 @@ class Engine extends EventEmitter {
     s.coop.partySize = Math.min(4, Math.max(2, Number(s.coop.partySize) || 3));
     s.teamSize = s.teamSize === 2 ? 2 : 1;
     if (s.maxStreak < 1) s.maxStreak = 1;
+    this._sanitizeOverlay();
     this.P(HOST).name = s.hostName;
 
     if (prevFormat !== s.format) {
@@ -754,6 +774,37 @@ class Engine extends EventEmitter {
     this._tryStart();
     this._changed();
     return s;
+  }
+
+  // オーバーレイの配置・見た目の値を安全な範囲に収める
+  _sanitizeOverlay() {
+    const o = this.settings.overlay;
+    const clamp = (v, lo, hi, def) => (Number.isFinite(Number(v)) ? Math.min(hi, Math.max(lo, Number(v))) : def);
+    for (const [key, def] of Object.entries(DEFAULT_SETTINGS.overlay.layout)) {
+      const l = (o.layout[key] = Object.assign({}, def, o.layout[key]));
+      l.x = Math.round(clamp(l.x, -200, 2120, def.x));
+      l.y = Math.round(clamp(l.y, -200, 1280, def.y));
+      l.scale = Math.round(clamp(l.scale, 0.3, 3, 1) * 100) / 100;
+    }
+    const st = o.style;
+    const hex = (v, def) => (/^#[0-9a-f]{6}$/i.test(String(v)) ? String(v) : def);
+    for (const k of ['accent', 'p1', 'p2', 'text', 'panel']) st[k] = hex(st[k], DEFAULT_SETTINGS.overlay.style[k]);
+    st.panelAlpha = Math.round(clamp(st.panelAlpha, 0, 1, 0.7) * 100) / 100;
+    st.font = String(st.font || '').replace(/[;{}<>"]/g, '').slice(0, 60);
+  }
+
+  // オーバーレイの配置（part: 'layout'）や見た目（part: 'style'）を初期値に戻す。key 指定でその要素だけ
+  resetOverlay(part, key) {
+    const def = DEFAULT_SETTINGS.overlay[part];
+    if (!def) return false;
+    if (key) {
+      if (!def[key]) return false;
+      this.settings.overlay[part][key] = clone(def[key]);
+    } else {
+      this.settings.overlay[part] = clone(def);
+    }
+    this._changed();
+    return true;
   }
 
   // 新しい配信回を始める。古いデータを返す（アーカイブ用）

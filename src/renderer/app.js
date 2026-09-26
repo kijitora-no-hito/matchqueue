@@ -435,13 +435,65 @@ function renderYt() {
 }
 
 let frameSrc = null;
+let lyKey = ''; // 配置を調整中の要素
 function renderOverlay() {
   const url = S.server.url ? `${S.server.url}/overlay` : '';
   $('#ovUrl').value = url || '（サーバ停止中）';
   $('#serverErr').textContent = S.server.error || '';
-  if (url && frameSrc !== url) { frameSrc = url; $('#ovFrame').src = url; }
+  // プレビューは編集モード（ドラッグ・ホイールで調整できる）で開く
+  if (url && frameSrc !== url) { frameSrc = url; $('#ovFrame').src = `${url}?edit=1`; }
   $$('[data-ov]').forEach((cb) => { cb.checked = !!S.settings.overlay[cb.dataset.ov]; });
+  $('#alphaVal').textContent = `${Math.round(S.settings.overlay.style.panelAlpha * 100)}%`;
+  renderLayoutPanel();
 }
+
+function renderLayoutPanel() {
+  $('#lySel').value = lyKey;
+  $('#lyControls').hidden = !lyKey;
+  if (!lyKey) return;
+  const l = S.settings.overlay.layout[lyKey];
+  fillIfIdle($('#lyScale'), String(Math.round(l.scale * 100)));
+  $('#lyScaleVal').textContent = `${Math.round(l.scale * 100)}%`;
+  fillIfIdle($('#lyX'), String(l.x));
+  fillIfIdle($('#lyY'), String(l.y));
+}
+
+function selectLayout(key, fromFrame) {
+  lyKey = key || '';
+  if (!fromFrame) $('#ovFrame').contentWindow.postMessage({ type: 'select', key: lyKey || null }, '*');
+  renderLayoutPanel();
+}
+
+const setLayout = (key, patch) => act('updateSettings', { overlay: { layout: { [key]: patch } } });
+
+// プレビュー（オーバーレイの編集モード）からの通知
+window.addEventListener('message', (e) => {
+  const d = e.data;
+  if (!d || d.source !== 'matchqueue-overlay' || !/^http:\/\/127\.0\.0\.1:\d+$/.test(e.origin)) return;
+  if (d.type === 'select') selectLayout(d.key, true);
+  if (d.type === 'layout' && S.settings.overlay.layout[d.key]) {
+    const patch = {};
+    if (d.x !== undefined) { patch.x = d.x; patch.y = d.y; }
+    if (d.scale !== undefined) patch.scale = d.scale;
+    selectLayout(d.key, true);
+    setLayout(d.key, patch);
+  }
+});
+$('#lySel').addEventListener('change', (e) => selectLayout(e.target.value));
+$('#lyScale').addEventListener('input', (e) => {
+  $('#lyScaleVal').textContent = `${e.target.value}%`;
+  if (lyKey) setLayout(lyKey, { scale: Number(e.target.value) / 100 });
+});
+['lyX', 'lyY'].forEach((id) => $(`#${id}`).addEventListener('change', () => {
+  if (lyKey) setLayout(lyKey, { x: Number($('#lyX').value), y: Number($('#lyY').value) });
+}));
+$('#lyResetOne').addEventListener('click', async () => {
+  if (!lyKey) return;
+  await act('resetOverlay', 'layout', lyKey);
+  toast('元の位置・大きさに戻しました');
+});
+$('#lyResetAll').addEventListener('click', async () => { await act('resetOverlay', 'layout'); toast('配置をすべて元に戻しました'); });
+$('#styleReset').addEventListener('click', async () => { await act('resetOverlay', 'style'); toast('見た目を元に戻しました'); });
 
 function buildTplGrid() {
   $('#tplGrid').innerHTML = Object.entries(TPL_LABELS).map(([k, label]) => `<label>${label}</label><input data-set="tpl.${k}">`).join('');

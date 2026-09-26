@@ -46,6 +46,26 @@ module.exports = async function smoke({ app, win, actions, engine }) {
     await view('overlay'); await sleep(1200); await shot('06-overlay');
     await view('settings'); await shot('07-settings');
 
+    // 配信オーバーレイの編集：プレビュー内でドラッグ・ホイールして設定に反映されるか
+    await view('overlay'); await sleep(1000);
+    const frame = win.webContents.mainFrame.frames.find((f) => f.url.includes('/overlay'));
+    if (!frame) throw new Error('オーバーレイのプレビューが見つからない');
+    await frame.executeJavaScript(`(() => {
+      const box = document.getElementById('b-queue');
+      const r = box.getBoundingClientRect();
+      const x = r.left + 50, y = r.top + 50;
+      box.dispatchEvent(new PointerEvent('pointerdown', { clientX: x, clientY: y, bubbles: true, pointerId: 1 }));
+      document.dispatchEvent(new PointerEvent('pointermove', { clientX: x - 300, clientY: y + 200, bubbles: true, pointerId: 1 }));
+      document.dispatchEvent(new PointerEvent('pointerup', { clientX: x - 300, clientY: y + 200, bubbles: true, pointerId: 1 }));
+      box.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, bubbles: true, cancelable: true }));
+    })()`);
+    await sleep(800);
+    const ql = engine.settings.overlay.layout.queue;
+    if (ql.x !== 1580 || ql.y !== 240 || ql.scale !== 1.05) throw new Error(`ドラッグ・ホイールが反映されていない: ${JSON.stringify(ql)}`);
+    await actions.updateSettings({ overlay: { style: { accent: '#4fc3ff', p1: '#2e7d32', p2: '#6a1b9a', panel: '#10233f', panelAlpha: 0.85, font: 'BIZ UDPMincho' } } });
+    await sleep(800); await shot('07b-overlay-edit');
+    await actions.resetOverlay('layout'); await actions.resetOverlay('style');
+
     // 2対2 + 配信者が毎試合出る
     await actions.updateSettings({ teamSize: 2, hostPlay: 'always' });
     for (const [n, t] of [['つばさ', '!参加 TSUBASA'], ['ハル', '!参加 haru_h'], ['かえで', '!参加 kaede']]) actions.testChat(n, t);

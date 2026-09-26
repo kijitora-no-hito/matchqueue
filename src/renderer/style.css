@@ -235,11 +235,19 @@ td.id input{width:160px;padding:2px 6px}
 .tplgrid input{width:100%}
 
 /* overlay preview */
-.ovwrap{display:grid;grid-template-columns:1fr 280px;gap:12px;align-items:start}
+.ovwrap{display:grid;grid-template-columns:1fr 300px;gap:12px;align-items:start}
 .stagewrap{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;
   background:radial-gradient(ellipse at 30% 40%,#2c5a4a 0,transparent 55%),radial-gradient(ellipse at 75% 60%,#5a3b2c 0,transparent 50%),#1b2230}
 .stagebg{position:absolute;inset:0;display:grid;place-items:center;color:#ffffff22;font-size:28px;font-weight:800;letter-spacing:.1em}
 .stagewrap iframe{position:absolute;left:0;top:0;width:1920px;height:1080px;border:0;transform-origin:0 0;background:transparent;color-scheme:normal}
+.ovhint{margin:8px 0 0}
+.lw{width:48px!important}
+.w40{width:40px;text-align:right}
+.w70{width:70px}
+.colors{display:flex;flex-wrap:wrap;gap:10px 16px;margin:6px 0 10px}
+.colors label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute)}
+.colors input[type=color]{width:64px;height:32px;padding:2px;cursor:pointer}
+#lyControls[hidden]{display:none}
 .urlbox{display:flex;gap:6px}
 .urlbox input{flex:1;font:12px ui-monospace,monospace}
 

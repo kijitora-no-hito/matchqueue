@@ -195,9 +195,13 @@
     <section class="view" id="v-overlay">
       <div class="page wide">
         <h2>配信オーバーレイ</h2>
-        <p class="lead">OBS の「ソース追加 → ブラウザ」に下の URL を貼り、幅 1920・高さ 1080 にしてください。背景は透過です。</p>
+        <p class="lead">OBS の「ソース追加 → ブラウザ」に下の URL を貼り、幅 1920・高さ 1080 にしてください。背景は透過です。
+          プレビューで調整した配置・色・フォントは、そのまま配信画面に反映されます。</p>
         <div class="ovwrap">
-          <div class="stagewrap"><div class="stagebg">GAME SCREEN</div><iframe id="ovFrame" title="オーバーレイのプレビュー"></iframe></div>
+          <div>
+            <div class="stagewrap"><div class="stagebg">GAME SCREEN</div><iframe id="ovFrame" title="オーバーレイのプレビュー"></iframe></div>
+            <p class="small mute ovhint">枠を<b>ドラッグで移動</b>、枠の上で<b>マウスホイールで拡大・縮小</b>できます。対戦がない時は配置確認用のサンプルが薄く表示されます（配信画面には出ません）。</p>
+          </div>
           <div class="col">
             <div class="card">
               <h4>OBS 用 URL</h4>
@@ -206,13 +210,55 @@
               <button class="btn sm" data-act="openOverlay">ブラウザで開く</button>
             </div>
             <div class="card">
-              <h4>表示する項目</h4>
-              <label class="field chk"><input type="checkbox" data-ov="match"> 現在の対戦</label>
-              <label class="field chk"><input type="checkbox" data-ov="queue"> 待機列（上位5人）</label>
-              <label class="field chk"><input type="checkbox" data-ov="join"> 参加方法</label>
-              <label class="field chk"><input type="checkbox" data-ov="maskId"> ゲーム内IDを伏せる（先頭3文字のみ）</label>
-              <label class="field chk"><input type="checkbox" data-ov="notices"> 受付などの返信をお知らせ表示</label>
+              <h4>配置</h4>
+              <div class="field"><label class="lw">要素</label>
+                <select id="lySel" class="grow">
+                  <option value="">（プレビューの枠をクリック）</option>
+                  <option value="match">現在の対戦・パーティー</option>
+                  <option value="queue">待機列</option>
+                  <option value="join">参加方法</option>
+                  <option value="notices">お知らせ</option>
+                </select>
+              </div>
+              <div id="lyControls">
+                <div class="field"><label class="lw">大きさ</label><input type="range" id="lyScale" min="30" max="300" step="5" class="grow"><span id="lyScaleVal" class="small mute w40"></span></div>
+                <div class="field"><label class="lw">位置</label>
+                  X <input type="number" id="lyX" class="w70"> Y <input type="number" id="lyY" class="w70">
+                </div>
+                <button class="btn sm" id="lyResetOne">この要素を元の位置・大きさに戻す</button>
+              </div>
+              <button class="btn sm" id="lyResetAll" style="margin-top:10px">配置をすべて元に戻す</button>
             </div>
+          </div>
+        </div>
+        <div class="grid2" style="margin-top:12px">
+          <div class="card">
+            <h4>見た目</h4>
+            <div class="field"><label>フォント</label>
+              <input list="fontList" data-set="overlay.style.font" class="grow" placeholder="標準（Yu Gothic UI）">
+              <datalist id="fontList">
+                <option value="Yu Gothic UI"><option value="Meiryo"><option value="BIZ UDPGothic"><option value="BIZ UDPMincho">
+                <option value="Yu Mincho"><option value="MS Gothic"><option value="Segoe UI">
+              </datalist>
+            </div>
+            <p class="small mute" style="margin:-4px 0 8px">一覧から選ぶか、PC に入っているフォント名を入力（空欄で標準）</p>
+            <div class="colors">
+              <label>アクセント<input type="color" data-set="overlay.style.accent"></label>
+              <label>左チーム<input type="color" data-set="overlay.style.p1"></label>
+              <label>右チーム<input type="color" data-set="overlay.style.p2"></label>
+              <label>文字<input type="color" data-set="overlay.style.text"></label>
+              <label>パネル背景<input type="color" data-set="overlay.style.panel"></label>
+            </div>
+            <div class="field"><label>パネルの濃さ</label><input type="range" min="0" max="1" step="0.05" data-set="overlay.style.panelAlpha" data-type="num" class="grow"><span id="alphaVal" class="small mute w40"></span></div>
+            <button class="btn sm" id="styleReset">見た目を元に戻す</button>
+          </div>
+          <div class="card">
+            <h4>表示する項目</h4>
+            <label class="field chk"><input type="checkbox" data-ov="match"> 現在の対戦・パーティー</label>
+            <label class="field chk"><input type="checkbox" data-ov="queue"> 待機列（上位5人）</label>
+            <label class="field chk"><input type="checkbox" data-ov="join"> 参加方法</label>
+            <label class="field chk"><input type="checkbox" data-ov="notices"> 受付などの返信をお知らせ表示</label>
+            <label class="field chk"><input type="checkbox" data-ov="maskId"> ゲーム内IDを伏せる（先頭3文字のみ）</label>
           </div>
         </div>
       </div>

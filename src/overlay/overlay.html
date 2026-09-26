@@ -4,106 +4,237 @@
 <meta charset="utf-8">
 <title>MatchQueue Overlay</title>
 <style>
-  /* OBS ブラウザソース用（1920×1080、背景透過） */
-  :root{ --accent:#f5b62a; --p1:#3d8bff; --p2:#ff4d5e; }
-  html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:transparent;color:#fff;
-    font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif}
+  /* OBS ブラウザソース用（1920×1080、背景透過）。色・フォント・配置は設定から JS で反映する */
+  :root{
+    --accent:#f5b62a; --p1:#3d8bff; --p2:#ff4d5e; --text:#fff;
+    --panel:rgba(0,0,0,.7); --panel-strong:rgba(0,0,0,.9);
+    --p1-soft:rgba(61,139,255,.55); --accent-soft:rgba(245,182,42,.35);
+    --font:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif;
+  }
+  html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:transparent;color:var(--text);font-family:var(--font)}
   [hidden]{display:none!important}
-  .join{position:absolute;left:40px;top:40px;background:#000b;border-left:10px solid var(--accent);padding:14px 26px;font-size:30px;font-weight:800}
-  .join small{display:block;font-size:22px;color:#ddd;font-weight:500;margin-top:2px}
+  .sub{opacity:.8}
+
+  /* 位置と大きさを持つ枠（left/top/transform は JS で設定） */
+  .box{position:absolute;left:0;top:0}
+  #b-match{display:flex;flex-direction:column;align-items:center;gap:12px}
+
+  .join{background:var(--panel);border-left:10px solid var(--accent);padding:14px 26px;font-size:30px;font-weight:800;white-space:nowrap}
+  .join small{display:block;font-size:22px;font-weight:500;margin-top:2px;opacity:.85}
   .join.closed{border-color:#777}
-  .queue{position:absolute;right:40px;top:40px;width:380px;background:#000b;border-radius:14px;padding:18px 24px;font-size:26px}
+  .queue{width:380px;background:var(--panel);border-radius:14px;padding:18px 24px;font-size:26px;box-sizing:border-box}
   .queue h5{margin:0 0 8px;font-size:20px;color:var(--accent);letter-spacing:.2em;display:flex}
-  .queue h5 span{margin-left:auto;color:#bbb;letter-spacing:0;font-weight:500}
+  .queue h5 span{margin-left:auto;letter-spacing:0;font-weight:500;color:var(--text);opacity:.7}
   .queue ol{margin:0;padding-left:34px}
   .queue li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5}
-  .queue .none{color:#aaa;list-style:none;margin-left:-34px}
-  .round{position:absolute;left:50%;bottom:190px;transform:translateX(-50%);background:#111;color:#ddd;font-size:22px;padding:5px 26px;border-radius:8px;letter-spacing:.12em;white-space:nowrap}
+  .queue .none{list-style:none;margin-left:-34px;opacity:.7}
+
+  .round{background:var(--panel-strong);font-size:22px;padding:5px 26px;border-radius:8px;letter-spacing:.12em;white-space:nowrap}
   .round b{color:var(--accent)}
-  .match{position:absolute;left:50%;bottom:60px;transform:translateX(-50%);display:flex;align-items:stretch;font-weight:800;font-size:46px;filter:drop-shadow(0 8px 16px #0009)}
-  .match .a,.match .b{padding:16px 44px;width:560px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .match{display:flex;align-items:stretch;font-weight:800;font-size:46px;filter:drop-shadow(0 8px 16px #0009)}
+  .match .a,.match .b{padding:16px 44px;width:560px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
   .match .a{background:var(--p1);clip-path:polygon(0 0,100% 0,94% 100%,0 100%)}
   .match .b{background:var(--p2);clip-path:polygon(6% 0,100% 0,100% 100%,0 100%);text-align:right}
-  .match .m{background:#111;color:var(--accent);display:grid;place-items:center;padding:0 28px;font-size:34px;font-style:italic}
+  .match .m{background:var(--panel-strong);color:var(--accent);display:grid;place-items:center;padding:0 28px;font-size:34px;font-style:italic}
   .match small{display:block;font-size:22px;font-weight:600;opacity:.9;font-family:ui-monospace,Consolas,monospace}
   .match .mem{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .match.duo{font-size:34px}
   .match.duo .mem{display:flex;align-items:baseline;gap:14px;line-height:1.3}
   .match.duo .b .mem{justify-content:flex-end}
   .match.duo small{display:inline;font-size:18px}
-  .round.duo{bottom:200px}
+
   /* 協力プレイ */
-  .coop{position:absolute;left:50%;bottom:50px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;filter:drop-shadow(0 8px 16px #0009)}
-  .coop .head{background:#111;color:#ddd;font-size:22px;padding:5px 26px;border-radius:8px;letter-spacing:.1em;white-space:nowrap}
+  .coop{display:flex;flex-direction:column;align-items:center;gap:10px;filter:drop-shadow(0 8px 16px #0009)}
+  .coop .head{background:var(--panel-strong);font-size:22px;padding:5px 26px;border-radius:8px;letter-spacing:.1em;white-space:nowrap}
   .coop .head b{color:var(--accent);letter-spacing:0}
   .coop .row{display:flex;gap:10px}
-  .coop .m{width:330px;padding:12px 22px;background:#1b3f7a;border-left:8px solid var(--p1);font-size:32px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .coop .m.host{background:#4a3608;border-left-color:var(--accent)}
-  .coop .m.open{background:#000a;border-left-color:#666;color:#aaa;font-weight:600}
+  .coop .m{width:330px;padding:12px 22px;background:var(--p1-soft);border-left:8px solid var(--p1);font-size:32px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
+  .coop .m.host{background:var(--accent-soft);border-left-color:var(--accent)}
+  .coop .m.open{background:var(--panel);border-left-color:#666;font-weight:600;opacity:.75}
   .coop .m small{display:block;font-size:20px;font-weight:600;opacity:.9;font-family:ui-monospace,Consolas,monospace}
+
   /* Bot の返信（受付しました等）を一時表示 */
-  .notices{position:absolute;left:40px;top:150px;width:620px;display:flex;flex-direction:column;gap:8px}
-  .notice{background:#2b2410e6;border-left:8px solid var(--accent);padding:10px 18px;font-size:24px;font-weight:600;border-radius:0 8px 8px 0;animation:nin .3s ease-out;transition:opacity .6s}
+  .notices{width:620px;display:flex;flex-direction:column;gap:8px;min-height:10px}
+  .notice{background:var(--panel-strong);border-left:8px solid var(--accent);padding:10px 18px;font-size:24px;font-weight:600;border-radius:0 8px 8px 0;animation:nin .3s ease-out;transition:opacity .6s}
   .notice.out{opacity:0}
   @keyframes nin{from{opacity:0;transform:translateX(-30px)}}
   .pop{animation:pop .5s ease-out}
-  @keyframes pop{from{opacity:0;transform:translateX(-50%) translateY(30px)}}
+  @keyframes pop{from{opacity:0;transform:translateY(30px)}}
+
+  /* 編集モード（アプリのプレビューでだけ使う。OBS では表示されない） */
+  body.edit .box{outline:3px dashed #ffffff88;outline-offset:6px;cursor:move;user-select:none}
+  body.edit .box:hover{outline-color:#fff}
+  body.edit .box.sel{outline:4px solid #4fc3ff;outline-offset:6px}
+  body.edit .box::before{content:attr(data-label);position:absolute;left:-6px;top:-44px;background:#4fc3ff;color:#001;font:700 20px/1 "Yu Gothic UI",sans-serif;padding:6px 10px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none}
+  body.edit .box:hover::before,body.edit .box.sel::before{opacity:1}
+  body.edit .sample{opacity:.6}
 </style>
 </head>
 <body>
-  <div class="join" id="join" hidden></div>
-  <div class="queue" id="queue" hidden></div>
-  <div class="round" id="round" hidden></div>
-  <div class="match" id="match" hidden></div>
-  <div class="coop" id="coop" hidden></div>
-  <div class="notices" id="notices"></div>
+  <div class="box" id="b-join" data-key="join" data-label="参加方法"><div class="join" id="join"></div></div>
+  <div class="box" id="b-queue" data-key="queue" data-label="待機列"><div class="queue" id="queue"></div></div>
+  <div class="box" id="b-match" data-key="match" data-label="現在の対戦・パーティー">
+    <div class="round" id="round" hidden></div>
+    <div class="match" id="match" hidden></div>
+    <div class="coop" id="coop" hidden></div>
+  </div>
+  <div class="box" id="b-notices" data-key="notices" data-label="お知らせ"><div class="notices" id="notices"></div></div>
 <script>
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const EDIT = new URLSearchParams(location.search).has('edit');
+  const DEFAULT_FONT = '"Segoe UI","Yu Gothic UI","Meiryo",sans-serif';
+  // 各要素の基準点（要素の幅・高さに対する割合）。layout の x,y はこの点の画面上の位置
+  const ANCHORS = { join: [0, 0], queue: [1, 0], match: [0.5, 1], notices: [0, 0] };
   let lastNo = null;
+  let layout = {};
+  let dragging = null;
+  let selected = null;
+  if (EDIT) document.body.classList.add('edit');
+
+  function rgba(hex, a) {
+    const n = parseInt(String(hex).slice(1), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+
+  function applyStyle(st) {
+    if (!st) return;
+    const r = document.documentElement.style;
+    r.setProperty('--accent', st.accent);
+    r.setProperty('--p1', st.p1);
+    r.setProperty('--p2', st.p2);
+    r.setProperty('--text', st.text);
+    r.setProperty('--panel', rgba(st.panel, st.panelAlpha));
+    r.setProperty('--panel-strong', rgba(st.panel, Math.min(1, st.panelAlpha + 0.2)));
+    r.setProperty('--p1-soft', rgba(st.p1, 0.55));
+    r.setProperty('--accent-soft', rgba(st.accent, 0.35));
+    r.setProperty('--font', st.font ? `"${st.font}",${DEFAULT_FONT}` : DEFAULT_FONT);
+  }
+
+  function place(key) {
+    const el = document.getElementById(`b-${key}`);
+    const l = layout[key];
+    if (!el || !l) return;
+    const [ax, ay] = ANCHORS[key];
+    el.style.left = `${l.x}px`;
+    el.style.top = `${l.y}px`;
+    el.style.transformOrigin = `${ax * 100}% ${ay * 100}%`;
+    el.style.transform = `translate(${-ax * 100}%, ${-ay * 100}%) scale(${l.scale})`;
+  }
 
   function render(s) {
     const o = s.overlay;
+    applyStyle(o.style);
+    if (!dragging) {
+      layout = JSON.parse(JSON.stringify(o.layout || {}));
+      Object.keys(ANCHORS).forEach(place);
+    }
+
+    $('#b-join').hidden = !o.join;
     const join = $('#join');
-    join.hidden = !o.join;
     join.className = 'join' + (s.accepting ? '' : ' closed');
     join.innerHTML = s.accepting ? `参加受付中！<small>チャットに「${esc(s.joinCmd)} ゲーム内ID」</small>` : '参加受付は終了しました';
 
-    const q = $('#queue');
-    q.hidden = !o.queue;
-    q.innerHTML = `<h5>NEXT<span>待機 ${s.queueCount} 人</span></h5><ol>${s.queue.slice(0, 5).map((p) => `<li>${esc(p.name)}</li>`).join('') || '<li class="none">募集中</li>'}</ol>`;
+    $('#b-queue').hidden = !o.queue;
+    $('#queue').innerHTML = `<h5>NEXT<span>待機 ${s.queueCount} 人</span></h5><ol>${s.queue.slice(0, 5).map((p) => `<li>${esc(p.name)}</li>`).join('') || '<li class="none">募集中</li>'}</ol>`;
 
-    const co = s.coop;
+    $('#b-notices').hidden = !o.notices;
+
+    // 編集モードで対戦もパーティーもない時は、配置が分かるようにサンプルを出す
+    let c = s.current;
+    let co = s.coop;
+    let sample = false;
+    if (EDIT && !c && !co) {
+      sample = true;
+      if (s.format === 'coop') co = { no: 1, target: 'サンプル', open: 1, members: [{ name: '配信者', gameId: '' }, { name: 'プレイヤーA', gameId: 'ID-A' }] };
+      else c = { no: 1, teams: [[{ name: 'プレイヤーA', gameId: 'ID-A' }], [{ name: 'プレイヤーB', gameId: 'ID-B' }]] };
+    }
+    $('#b-match').hidden = !o.match || (!c && !co);
+    $('#b-match').classList.toggle('sample', sample);
+
     const cv = $('#coop');
-    cv.hidden = !(o.match && co);
+    cv.hidden = !co;
     if (co) {
       const mem = (p, i) => `<div class="m${i === 0 ? ' host' : ''}">${esc(p.name)}${p.gameId ? `<small>${esc(p.gameId)}</small>` : '<small>&nbsp;</small>'}</div>`;
       const open = Array.from({ length: co.open }, () => '<div class="m open">募集中<small>&nbsp;</small></div>').join('');
       cv.innerHTML = `<div class="head">PLAY ${co.no}${co.target ? ` ・ <b>${esc(co.target)}</b>` : ''}</div><div class="row">${co.members.map(mem).join('')}${open}</div>`;
     }
 
-    const c = s.current;
     const m = $('#match'), r = $('#round');
-    m.hidden = r.hidden = !(o.match && c);
+    m.hidden = r.hidden = !c;
     if (c) {
       r.innerHTML = `MATCH ${c.no}${s.champ ? ` ・ <b>${esc(s.champ.name)} ${s.champ.streak}連勝中</b>` : ''}`;
       const team = (t) => t.map((p) => `<div class="mem">${esc(p.name)}${p.gameId ? `<small>${esc(p.gameId)}</small>` : ''}</div>`).join('');
       m.classList.toggle('duo', c.teams[0].length > 1);
-      r.classList.toggle('duo', c.teams[0].length > 1);
       m.innerHTML = `<div class="a">${team(c.teams[0])}</div><div class="m">VS</div><div class="b">${team(c.teams[1])}</div>`;
-      if (lastNo !== c.no) { m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop'); lastNo = c.no; }
+      if (!sample && lastNo !== c.no) { m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop'); lastNo = c.no; }
     }
   }
 
-  function notice(text) {
+  function notice(text, keep) {
     const box = $('#notices');
     const el = document.createElement('div');
     el.className = 'notice';
     el.textContent = text;
     box.appendChild(el);
     while (box.children.length > 4) box.firstChild.remove();
+    if (keep) return;
     setTimeout(() => el.classList.add('out'), 8000);
     setTimeout(() => el.remove(), 8700);
+  }
+
+  // ---------- 編集モード：ドラッグで移動、ホイールで拡大縮小 ----------
+  function post(msg) { window.parent.postMessage(Object.assign({ source: 'matchqueue-overlay' }, msg), '*'); }
+
+  function select(key) {
+    selected = key;
+    document.querySelectorAll('.box').forEach((b) => b.classList.toggle('sel', b.dataset.key === key));
+  }
+
+  if (EDIT) {
+    notice('@視聴者 さん受付しました（お知らせの表示例）', true);
+
+    document.addEventListener('pointerdown', (e) => {
+      const box = e.target.closest('.box');
+      if (!box) { select(null); post({ type: 'select', key: null }); return; }
+      const key = box.dataset.key;
+      select(key);
+      post({ type: 'select', key });
+      dragging = { key, sx: e.clientX, sy: e.clientY, x: layout[key].x, y: layout[key].y, moved: false };
+      try { box.setPointerCapture(e.pointerId); } catch { /* 合成イベントなど */ }
+      e.preventDefault();
+    });
+    document.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const l = layout[dragging.key];
+      l.x = Math.round(dragging.x + e.clientX - dragging.sx);
+      l.y = Math.round(dragging.y + e.clientY - dragging.sy);
+      dragging.moved = true;
+      place(dragging.key);
+    });
+    document.addEventListener('pointerup', () => {
+      if (!dragging) return;
+      const { key, moved } = dragging;
+      dragging = null;
+      if (moved) post({ type: 'layout', key, x: layout[key].x, y: layout[key].y });
+    });
+    let wheelTimer = null;
+    document.addEventListener('wheel', (e) => {
+      const box = e.target.closest('.box');
+      if (!box) return;
+      e.preventDefault();
+      const key = box.dataset.key;
+      select(key);
+      const l = layout[key];
+      l.scale = Math.min(3, Math.max(0.3, Math.round((l.scale + (e.deltaY < 0 ? 0.05 : -0.05)) * 100) / 100));
+      place(key);
+      clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(() => post({ type: 'layout', key, scale: l.scale }), 200);
+    }, { passive: false });
+    // アプリ側から選択が変わった時
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'select') select(e.data.key);
+    });
   }
 
   function connect() {

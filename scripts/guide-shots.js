@@ -103,6 +103,11 @@ module.exports = async function guideShots({ app, win, actions, clearChat }) {
     await view('dash'); await shot('edf-dash');
     await view('history'); await scrollTop(); await shot('history');
 
+    // ---------- 配信画面のレイアウト調整 ----------
+    await view('overlay'); await scrollTop(); await sleep(800);
+    await win.webContents.executeJavaScript(`(() => { const s = document.querySelector('#lySel'); s.value = 'match'; s.dispatchEvent(new Event('change')); })()`);
+    await sleep(600); await shot('overlay-edit');
+
     plugin.destroy();
     fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify({ ok: true }, null, 2));
   } catch (e) {

@@ -370,6 +370,46 @@ test('対戦 ⇔ 協力 の切り替えで参加者は列に戻る', () => {
   assert.deepEqual(queue(e), ['c']);
 });
 
+// ---------- 配信オーバーレイの配置・見た目 ----------
+test('オーバーレイの配置は一部だけ変えられ、範囲外の値は丸められる', () => {
+  const e = new Engine();
+  e.updateSettings({ overlay: { layout: { match: { x: 500, y: 600 } } } });
+  assert.deepEqual(e.settings.overlay.layout.match, { x: 500, y: 600, scale: 1 });
+  e.updateSettings({ overlay: { layout: { match: { scale: 99 }, queue: { x: 99999, y: 'abc' } } } });
+  assert.equal(e.settings.overlay.layout.match.scale, 3);
+  assert.equal(e.settings.overlay.layout.queue.x, 2120);
+  assert.equal(e.settings.overlay.layout.queue.y, 40); // 数値でなければ初期値
+});
+
+test('オーバーレイの見た目：不正な色やフォント名は受け付けない', () => {
+  const e = new Engine();
+  e.updateSettings({ overlay: { style: { accent: '#00ff00', p1: 'red', font: 'BIZ UDPGothic";}body{', panelAlpha: 5 } } });
+  const st = e.settings.overlay.style;
+  assert.equal(st.accent, '#00ff00');
+  assert.equal(st.p1, '#3d8bff');
+  assert.equal(st.font, 'BIZ UDPGothicbody');
+  assert.equal(st.panelAlpha, 1);
+});
+
+test('オーバーレイの配置・見た目を元に戻す（要素ごと／全部）', () => {
+  const e = new Engine();
+  e.updateSettings({ overlay: { layout: { match: { x: 1, y: 2, scale: 2 }, join: { x: 300 } }, style: { accent: '#123456' } } });
+  e.resetOverlay('layout', 'match');
+  assert.deepEqual(e.settings.overlay.layout.match, { x: 960, y: 1030, scale: 1 });
+  assert.equal(e.settings.overlay.layout.join.x, 300);
+  e.resetOverlay('layout');
+  assert.equal(e.settings.overlay.layout.join.x, 40);
+  e.resetOverlay('style');
+  assert.equal(e.settings.overlay.style.accent, '#f5b62a');
+});
+
+test('以前の設定（配置・見た目なし）を読み込んでも初期値が入る', () => {
+  const e = new Engine({ settings: { overlay: { match: false } } });
+  assert.equal(e.settings.overlay.match, false);
+  assert.equal(e.settings.overlay.layout.queue.x, 1880);
+  assert.equal(e.publicState().overlay.style.panelAlpha, 0.7);
+});
+
 test('CSV にヘッダと試合が出る', () => {
   const e = new Engine({ settings: { teamSize: 2 } });
   joinAll(e, ['a', 'b', 'c', 'd']);

@@ -214,6 +214,7 @@ const actions = {
     return r.filePath;
   },
   openSessionsFolder: () => shell.openPath(store.sessionsDir()),
+  resetOverlay: (part, key) => engine.resetOverlay(part, key),
   openOverlay: () => server.baseUrl() && shell.openExternal(`${server.baseUrl()}/overlay`),
   copy: (text) => clipboard.writeText(String(text)),
   openExternal: (url) => /^https:\/\//.test(url) && shell.openExternal(url),
