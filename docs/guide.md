@@ -236,6 +236,8 @@
 
 ## 配信画面のレイアウトを調整する
 
+> 🧪 この機能は [β版 v0.3.0](https://github.com/kijitora-no-hito/matchqueue/releases/tag/v0.3.0-beta.1) 以降で使えます。
+
 「配信オーバーレイ」画面のプレビューで、配信画面に出る要素の **位置・大きさ・色・フォント** を変えられます。調整した内容はそのまま OBS の配信画面に反映されます（OBS 側の設定変更は不要です）。
 
 ![レイアウト調整](images/guide/overlay-edit.png)

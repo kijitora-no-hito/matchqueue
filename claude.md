@@ -45,6 +45,8 @@ YouTube でのゲーム配信中に行う「視聴者参加型ルームマッチ
   - 設定は `settings.overlay.layout`（要素ごとの基準点 x,y と scale）と `settings.overlay.style`。基準点は overlay.html の `ANCHORS`
   - プレビューは `/overlay?edit=1`（編集モード）。iframe 内のドラッグ・ホイールを `postMessage` でアプリに送り `updateSettings` で保存 → SSE で反映
   - 値の検証は `Engine._sanitizeOverlay()`（範囲・色コード・フォント名の記号除去）
+  - オーナー未確認のまま **v0.3.0-beta.1 を GitHub の Pre-release** として公開（オーナー指示）。README のボタンは安定版（latest = v0.2.2）のまま
+  - β版の Release には固定名 `MatchQueue-Setup.exe` を**付けない**（付けても latest ではないので無害だが紛らわしい）。正式版 v0.3.0 を出す時に付ける
   - オーナーの D ドライブが空き容量ほぼ 0 になることがある。ビルドは `--config.directories.output=<C: の作業フォルダ>` で C に出力すると安全
 
 ## 公開・リリース手順

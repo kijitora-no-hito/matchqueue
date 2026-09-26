@@ -10,7 +10,10 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
     <img alt="Windows版をダウンロード" src="https://img.shields.io/github/v/release/kijitora-no-hito/matchqueue?style=for-the-badge&label=Windows%E7%89%88%E3%82%92%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89&color=0550ae&labelColor=0969da&logo=windows&logoColor=white" width="720">
   </a>
   <br>
-  <sub>ボタンを押すとインストーラ（MatchQueue-Setup.exe）がダウンロードされます。インストール方法は<a href="#インストール">こちら</a></sub>
+  <sub>ボタンを押すと安定版のインストーラ（MatchQueue-Setup.exe）がダウンロードされます。インストール方法は<a href="#インストール">こちら</a></sub>
+  <br>
+  <sub>🧪 新機能のお試し：<a href="https://github.com/kijitora-no-hito/matchqueue/releases/tag/v0.3.0-beta.1">β版 v0.3.0</a>（配信画面のレイアウト調整）
+  ／ 📦 <a href="https://github.com/kijitora-no-hito/matchqueue/releases">過去のバージョン</a>（v0.2.0 など）</sub>
 </p>
 
 <p align="center"><b>📖 <a href="docs/guide.md">使い方ガイド</a></b> — ゲーム別のおすすめ設定、配信中の操作、視聴者への案内文</p>
@@ -42,7 +45,10 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
    - ブラウザで「一般的にダウンロードされていません」と出た場合は、「…」→「保持する」を選んでください
 2. スタートメニューまたはデスクトップの「MatchQueue」から起動
 
-過去のバージョンや更新内容は [Releases](../../releases) にあります。
+過去のバージョン（v0.2.0 など）や更新内容、β版は [Releases](../../releases) にあります。
+β版は新機能を先に試せる版です。不具合があるかもしれないので、本番の配信では安定版をおすすめします（安定版に戻す時は安定版を上書きインストールすれば OK。データは引き継がれます）。
+
+> **v0.3.0 β版の新機能**：配信画面（OBS オーバーレイ）の位置・大きさ・色・フォントの調整。使い方は[ガイド](docs/guide.md#配信画面のレイアウトを調整する)を参照（β版のみの機能です）。
 
 データ（参加者・履歴・設定）は `%APPDATA%\MatchQueue` に保存されます。上書きインストールしても消えません。
 
