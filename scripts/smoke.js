@@ -46,6 +46,13 @@ module.exports = async function smoke({ app, win, actions, engine }) {
     await view('overlay'); await sleep(1200); await shot('06-overlay');
     await view('settings'); await shot('07-settings');
 
+    // 配信終了予告：予定表の表示と取り消し
+    actions.setEndPlan(2);
+    await view('dash'); await shot('07a-end-plan');
+    const schedRows = await win.webContents.executeJavaScript(`document.querySelectorAll('#next .sched li').length`);
+    if (schedRows !== 2) throw new Error(`終了までの予定が 2 件表示されていない: ${schedRows}`);
+    actions.clearEndPlan();
+
     // 配信オーバーレイの編集：プレビュー内でドラッグ・ホイールして設定に反映されるか
     await view('overlay'); await sleep(1000);
     const frame = win.webContents.mainFrame.frames.find((f) => f.url.includes('/overlay'));

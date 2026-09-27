@@ -76,6 +76,7 @@ const TPL_LABELS = {
   party: '協力パーティー（告知）', join: '参加受付', needId: 'IDなしで参加', already: '参加済み', closed: '受付終了中',
   full: '満員', badId: 'ID 形式エラー', dupId: 'ID 重複', position: '順番確認', notJoined: '未参加',
   leave: '辞退', leaveAfter: '対戦中の辞退', idChanged: 'ID 変更',
+  endNotice: '終了予告のお知らせ', endDone: '全試合終了のお知らせ',
 };
 const LOG_STATUS = { sent: '送信', failed: '失敗', skipped: '未送信', replaced: '置換' };
 
@@ -201,6 +202,13 @@ function sideHtml(team, cls) {
   return `<div class="side ${cls}${team.length > 1 ? ' duo' : ''}">${st}${mems}</div>`;
 }
 
+function finishedHtml() {
+  const unit = S.end.unit;
+  return `<div class="emptymatch"><b style="font-size:18px;color:var(--text)">予定の${unit}はすべて終了しました 🎉</b><br>お疲れさまでした！
+    <br><button class="btn" data-act="clearEndPlan">終了予告を取り消して続ける</button>
+    ${S.canUndo ? '<button class="btn" data-act="undo">↶ 直前の結果を取り消し</button>' : ''}</div>`;
+}
+
 function slotsNeeded() { return S.settings.teamSize * 2 - (S.settings.hostPlay === 'always' ? 1 : 0); }
 
 function renderParty() {
@@ -212,7 +220,13 @@ function renderParty() {
   $('#targetLabel').textContent = lb.target;
   fillIfIdle($('#targetInput'), party ? party.target : '');
   $('#targetInput').disabled = !party;
-  if (!party) { $('#partyBox').innerHTML = ''; $('#coopBtns').innerHTML = ''; return; }
+  if (!party) {
+    $('#partyBox').style.gridTemplateColumns = '1fr';
+    $('#partyBox').innerHTML = S.end && S.end.finished ? finishedHtml() : '';
+    $('#coopBtns').innerHTML = '';
+    $('#deadLine').textContent = '';
+    return;
+  }
 
   const card = (k) => {
     const p = P(k);
@@ -253,6 +267,10 @@ function renderMatch() {
   const c = S.data.current;
   const hp = S.settings.hostPlay;
   $('#hostJoinBtn').hidden = !((hp === 'queue' || hp === 'champion') && !isPlaying('host') && !S.data.queue.includes('host'));
+  if (!c && S.end && S.end.finished) {
+    $('#match').innerHTML = finishedHtml();
+    return;
+  }
   if (!c) {
     const needed = slotsNeeded();
     const can = S.data.queue.length >= needed;
@@ -273,8 +291,49 @@ function renderMatch() {
     </div>`;
 }
 
+function renderEndControls() {
+  const end = S.end;
+  const unit = isCoop() ? 'プレイ' : '試合';
+  $('#endUnit').textContent = unit;
+  $('#endSet').textContent = end ? '変更' : '予告する';
+  $('#endClear').hidden = !end;
+  if (end && document.activeElement !== $('#endN')) $('#endN').value = Math.max(1, end.remaining);
+  const pill = $('#endPill');
+  pill.hidden = !end;
+  if (end) {
+    pill.classList.toggle('done', end.finished);
+    pill.textContent = end.finished ? `予定の${unit}はすべて終了` : end.last ? `ラスト${unit}` : `終了予告：あと ${end.remaining} ${unit}`;
+  }
+}
+
+// 終了予告中：終わりまでの予定を一覧で出す
+function renderSchedule() {
+  const end = S.end, sc = S.schedule;
+  const unit = end.unit;
+  $('#nextTitle').textContent = end.finished ? '終了までの予定' : `終了までの予定（あと ${end.remaining} ${unit}）`;
+  const rows = sc.rows.map((r) => {
+    const cls = [r.now ? 'now' : '', r.no === end.endAt ? 'last' : ''].join(' ');
+    const badge = r.now ? '<span class="tag bot">NOW</span>' : r.no === end.endAt ? `<span class="tag leave">ラスト</span>` : '';
+    const body = 'members' in r
+      ? `${esc(r.members || '（配信者のみ）')}${r.open > 0 ? `<span>＋空き ${r.open}</span>` : ''}`
+      : `${esc(r.a)}<span>vs</span>${esc(r.b)}`;
+    return `<li class="${cls}"><span class="no">第${r.no}${unit}</span><span class="pair">${body}</span>${badge}</li>`;
+  }).join('');
+  if (end.finished) {
+    $('#next').innerHTML = `<div style="grid-column:1/-1" class="schednote warn">予定の${unit}はすべて終わりました。続ける時は「取り消す」を押してください。</div>`;
+    return;
+  }
+  const notes = [];
+  if (sc.short) notes.push(`<div class="schednote warn">待機中の人数が足りないため、予定の${unit}数まで埋まっていません（参加受付は締め切り中）。</div>`);
+  if (sc.leftover.length) notes.push(`<div class="schednote">今回は回りきらない人：${esc(sc.leftover.join('、'))}</div>`);
+  if (sc.note) notes.push(`<div class="schednote">※ ${esc(sc.note)}</div>`);
+  $('#next').innerHTML = `<div style="grid-column:1/-1"><ul class="sched">${rows}</ul>${notes.join('')}</div>`;
+}
+
 function renderNext() {
   const pv = S.preview;
+  renderEndControls();
+  if (S.end) { renderSchedule(); return; }
   $('#nextTitle').textContent = isCoop() ? 'この先のパーティー' : 'この先の対戦';
   if (!pv) { $('#next').innerHTML = '<div class="mute small">—</div>'; return; }
   const pair = (x) => ('text' in x ? (x.text ? esc(x.text) : '<span>—</span>') : x.a && x.b ? `${esc(x.a)}<span>vs</span>${esc(x.b)}` : x.b || x.a ? `${esc(x.a || x.b)}<span>vs</span>募集中` : '<span>—</span>');
@@ -282,7 +341,7 @@ function renderNext() {
     + (pv.note ? `<div class="note">${esc(pv.note)}</div>` : '');
 }
 
-const CAND_KIND = { announce: '告知', reply: '返信' };
+const CAND_KIND = { announce: '告知', reply: '返信', info: 'お知らせ' };
 
 // 通知音（音声ファイルを使わず Web Audio で「ピンポン」と鳴らす）
 let audioCtx = null;
@@ -326,7 +385,7 @@ function renderBot() {
   if (!canPost) {
     $('#candList').innerHTML = S.candidates.length
       ? S.candidates.slice().reverse().map((c) => `<li class="${c.copied ? 'copied' : ''}">
-          <span class="tag ${c.kind === 'announce' ? 'bot' : 'join'}">${CAND_KIND[c.kind] || c.kind}</span>
+          <span class="tag ${{ announce: 'bot', info: 'leave' }[c.kind] || 'join'}">${CAND_KIND[c.kind] || c.kind}</span>
           <span class="ct">${esc(c.text)}</span>
           <button class="btn sm${c.copied ? '' : ' primary'}" data-act="copyCandidate" data-args="[${c.id}]">${c.copied ? 'もう一度コピー' : 'コピー'}</button>
           <button class="x" title="候補から消す" data-act="removeCandidate" data-args="[${c.id}]">✕</button></li>`).join('')
@@ -584,6 +643,17 @@ $('#testForm').addEventListener('submit', async (e) => {
   if (!text) return;
   await act('testChat', name, text);
   $('#testText').value = '';
+});
+
+$('#endSet').addEventListener('click', async () => {
+  const n = Number($('#endN').value);
+  if (!(n >= 1)) return toast('1 以上の数を入れてください');
+  const r = await act('setEndPlan', n);
+  if (r.value) toast(`あと ${n} ${S.end ? S.end.unit : ''}で終了します。参加受付を締め切りました`);
+});
+$('#endClear').addEventListener('click', async () => {
+  await act('clearEndPlan');
+  toast('終了予告を取り消しました（参加受付は元の状態に戻しました）');
 });
 
 $('#targetInput').addEventListener('change', (e) => act('setTarget', e.target.value));

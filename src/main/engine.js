@@ -94,6 +94,8 @@ const DEFAULT_SETTINGS = {
     leave: '@{name} さん 辞退を受け付けました',
     leaveAfter: '@{name} さん この試合の後に抜けます',
     idChanged: '@{name} さん IDを {id} に変更しました',
+    endNotice: '【お知らせ】本日はあと{n}{unit}で終了します！ 最後は第{last}{unit}です。参加受付は締め切りました',
+    endDone: '【お知らせ】本日の{unit}はすべて終了しました！ ご参加ありがとうございました',
   },
 };
 
@@ -135,6 +137,8 @@ function freshData(hostName) {
     streak: 0,
     matchNo: 0,
     history: [],
+    endAt: null, // 配信終了予告：この番号の試合・プレイで終わり（null なら予告なし）
+    endPrevAccepting: null, // 予告前の参加受付の状態（取り消した時に戻す）
   };
 }
 
@@ -152,6 +156,7 @@ function migrate(settings, data) {
     if (h.mode === 'host') h.mode = 'rotation';
   }
   if (data.party === undefined) data.party = null;
+  if (data.endAt === undefined) { data.endAt = null; data.endPrevAccepting = null; }
 }
 
 class Engine extends EventEmitter {
@@ -314,9 +319,17 @@ class Engine extends EventEmitter {
     this.data.queue.unshift(...back);
   }
 
+  // 配信終了予告で、番号 no の試合・プレイが予定を超えるか
+  _pastEnd(no) { return this.data.endAt != null && no > this.data.endAt; }
+
   // stay: 勝ち残るチーム（なければ空）。組めたら true
   _buildMatch(stay) {
     const s = this.settings, d = this.data, n = s.teamSize;
+    if (this._pastEnd(d.matchNo + 1)) { // 終了予告の試合数に達したので、これ以上は組まない
+      this._returnFront(stay);
+      d.current = null;
+      return false;
+    }
     let teamA = stay.slice();
     if (teamA.length > n) { // 人数設定が減った場合は解散
       this._returnFront(teamA);
@@ -358,7 +371,7 @@ class Engine extends EventEmitter {
   }
 
   _ensureParty() {
-    if (!this.data.party) this._newParty();
+    if (!this.data.party && !this._pastEnd(this.data.matchNo + 1)) this._newParty();
   }
 
   // 空き枠を列から補充する。reserved（死亡で空いた、次のプレイまで空けておく枠）は除く
@@ -542,8 +555,142 @@ class Engine extends EventEmitter {
       d.champ = null; d.streak = 0;
     }
     this._buildMatch(stay);
+    const finished = !d.current && d.endAt != null && d.matchNo >= d.endAt;
+    if (finished) this._emitEndDone();
     this._changed();
-    return { streakOut };
+    return { streakOut, finished };
+  }
+
+  // ---------- 配信終了予告 ----------
+  _unit() { return this._isCoop() ? 'プレイ' : '試合'; }
+
+  _emitEndDone() {
+    this.emit('post', { kind: 'info', text: fill(this.settings.tpl.endDone, { unit: this._unit() }) });
+  }
+
+  // 今の試合・プレイの番号と、進行中かどうか
+  _curNo() {
+    const d = this.data;
+    if (this._isCoop()) return { no: d.party ? d.party.no : d.matchNo, active: !!d.party };
+    return { no: d.current ? d.current.no : d.matchNo, active: !!d.current };
+  }
+
+  // 「あと n 試合（プレイ）で終了」。進行中の試合・プレイも 1 つとして数える。以降の参加受付は締め切る
+  setEndPlan(n) {
+    const d = this.data, s = this.settings;
+    n = Math.floor(Number(n));
+    if (!(n >= 1 && n <= 99)) return false;
+    const { no, active } = this._curNo();
+    if (d.endAt == null) d.endPrevAccepting = s.accepting;
+    d.endAt = (active ? no - 1 : d.matchNo) + n;
+    s.accepting = false;
+    this.emit('post', { kind: 'info', text: fill(s.tpl.endNotice, { n, last: d.endAt, unit: this._unit() }) });
+    this._tryStart();
+    this._changed();
+    return this.endInfo();
+  }
+
+  clearEndPlan() {
+    const d = this.data;
+    if (d.endAt == null) return false;
+    d.endAt = null;
+    if (d.endPrevAccepting != null) this.settings.accepting = d.endPrevAccepting;
+    d.endPrevAccepting = null;
+    this._tryStart();
+    this._changed();
+    return true;
+  }
+
+  endInfo() {
+    const d = this.data;
+    if (d.endAt == null) return null;
+    const { no, active } = this._curNo();
+    const remaining = Math.max(0, d.endAt - no + (active ? 1 : 0));
+    return { endAt: d.endAt, remaining, finished: remaining === 0, last: active && no === d.endAt, unit: this._unit() };
+  }
+
+  // 終了予告中の予定（結果は分からないので、勝ち抜きの勝者などは「第n試合の勝者」と表示する）
+  // 戻り値 { rows: [{no, a, b} | {no, members, open}], leftover: [名前], note }
+  schedule() {
+    const d = this.data, s = this.settings;
+    if (d.endAt == null) return null;
+    const nm = (k) => this.P(k).name;
+    const tok = (k) => ({ k, name: nm(k), size: 1 });
+    const names = (toks) => toks.map((t) => t.name).join('・');
+    const rows = [];
+    const seen = new Set();
+    const mark = (toks) => toks.forEach((t) => t.k && seen.add(t.k));
+    const q = d.queue.map(tok);
+    // 試合を終えた人を列に戻す（1回で終了の設定や、毎試合出る配信者は戻さない）
+    const back = (toks) => {
+      if (!s.rejoin) return;
+      q.push(...toks.filter((t) => t.k !== HOST || this._hostQueued()));
+    };
+    const takeN = (n) => {
+      const out = [];
+      let c = 0;
+      while (c < n && q.length) { const t = q.shift(); out.push(t); c += t.size; }
+      return c >= n ? out : null;
+    };
+    let note = null;
+
+    if (this._isCoop()) {
+      const g = s.coop.partySize - 1;
+      let no = d.party ? d.party.no : d.matchNo;
+      let guests = d.party ? d.party.guests.map(tok) : [];
+      const stays = d.party ? { ...d.party.stays } : {};
+      if (d.party) { rows.push({ no, members: names(guests), open: g - guests.length, now: true }); mark(guests); }
+      while (no < d.endAt && rows.length < 50) {
+        no++;
+        const staying = [];
+        const leaving = [];
+        for (const t of guests) {
+          const c = (stays[t.k] || 0) + 1;
+          if (s.coop.stayPlays > 0 && c >= s.coop.stayPlays) leaving.push(t);
+          else { staying.push(t); stays[t.k] = c; }
+        }
+        back(leaving);
+        guests = staying;
+        while (guests.length < g && q.length) { const t = q.shift(); guests.push(t); stays[t.k] = 0; }
+        rows.push({ no, members: names(guests), open: g - guests.length });
+        mark(guests);
+      }
+      note = 'ゲストの死亡による交代は予定に含みません';
+    } else {
+      const n = s.teamSize;
+      const hostTok = { k: HOST, name: nm(HOST), size: 1 };
+      let no = d.current ? d.current.no : d.matchNo;
+      let prev = d.current ? d.current.teams.map((t) => t.map(tok)) : null;
+      if (prev) { rows.push({ no, a: names(prev[0]), b: names(prev[1]), now: true }); mark(prev.flat()); }
+      while (no < d.endAt && rows.length < 50) {
+        no++;
+        let A;
+        let B;
+        if (s.mode === 'rotation' || !prev) {
+          if (prev) back(prev.flat());
+          A = this._hostPinned() ? [hostTok] : [];
+          const restA = takeN(n - A.length);
+          if (!restA) break;
+          A = A.concat(restA);
+          B = takeN(n);
+        } else {
+          // 勝ち抜き：前の試合の勝者が残り、敗者は列の最後尾へ（どちらが勝つかは分からない）
+          const label = n === 1 ? '' : 'チーム';
+          back([{ k: null, name: `第${no - 1}試合の敗者${label}`, size: n }]);
+          A = [{ k: null, name: `第${no - 1}試合の勝者${label}`, size: n }];
+          B = takeN(n);
+          note = '勝ち抜きの連勝上限による交代は予定に含みません';
+        }
+        if (!B) break;
+        rows.push({ no, a: names(A), b: names(B) });
+        mark(A.concat(B));
+        prev = [A, B];
+      }
+    }
+    const lastRow = rows[rows.length - 1];
+    const short = !lastRow || lastRow.no < d.endAt; // 人数が足りず予定を埋めきれない
+    const leftover = d.queue.filter((k) => !seen.has(k)).map(nm);
+    return { rows, leftover, note, short, unit: this._unit() };
   }
 
   undo() {
@@ -585,6 +732,13 @@ class Engine extends EventEmitter {
     }
     d.party = null;
     leaving.forEach((k) => this._requeue(k));
+    if (this._pastEnd(d.matchNo + 1)) {
+      // 終了予告のプレイ数に達した：残っていたゲストも列に戻して終わり
+      staying.forEach((k) => this._requeue(k));
+      this._emitEndDone();
+      this._changed();
+      return { result, left: leaving.length, finished: true };
+    }
     this._newParty(staying, stays, party.target);
     const added = this._fillParty({ announce: false });
     if (s.autoPost && (added.length || staying.length)) this.emit('post', { kind: 'announce', text: this.announceText() });
@@ -810,6 +964,7 @@ class Engine extends EventEmitter {
   // 新しい配信回を始める。古いデータを返す（アーカイブ用）
   newSession() {
     const old = this.data;
+    if (old.endPrevAccepting != null) this.settings.accepting = old.endPrevAccepting; // 終了予告で締め切っていた受付を戻す
     this.data = freshData(this.settings.hostName);
     this.undoStack = [];
     this._applyHostPlay();
@@ -830,6 +985,7 @@ class Engine extends EventEmitter {
     const party = d.party;
     return {
       format: s.format,
+      end: this.endInfo(),
       coop: party ? {
         no: party.no,
         target: party.target,

@@ -103,6 +103,18 @@ module.exports = async function guideShots({ app, win, actions, clearChat }) {
     await view('dash'); await shot('edf-dash');
     await view('history'); await scrollTop(); await shot('history');
 
+    // ---------- 配信終了予告 ----------
+    await reset({ format: 'versus', teamSize: 1, mode: 'rotation', hostPlay: 'off' });
+    await say(['たけのこ隊長', '!参加 Takenoko#1234'], ['sora_gg', '!参加 SORA-77'], ['みけねこ', '!参加 mike_neko'],
+      ['Kenji', '!参加 KNJ_99'], ['ぽんず', '!参加 ponzu'], ['ユウ', '!参加 yuu_0'], ['夜更かしP', '!参加 yofukashi']);
+    actions.result(1);
+    actions.setEndPlan(3);
+    await say(['つばさ', '!参加 TSUBASA']); // 締め切り後の参加 → 締め切りの返信
+    await view('dash'); await shot('end-dash');
+    actions.result(2); actions.result(1); actions.result(2);
+    await sleep(300); await shot('end-finished');
+    actions.clearEndPlan();
+
     // ---------- 配信画面のレイアウト調整 ----------
     await view('overlay'); await scrollTop(); await sleep(800);
     await win.webContents.executeJavaScript(`(() => { const s = document.querySelector('#lySel'); s.value = 'match'; s.dispatchEvent(new Event('change')); })()`);

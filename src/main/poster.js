@@ -16,6 +16,7 @@ class Poster extends EventEmitter {
     this.canSend = canSend;
     this.getSettings = getSettings;
     this.announce = null;
+    this.infos = []; // 配信終了予告などのお知らせ（告知より優先・まとめない）
     this.replies = [];
     this.lastSentAt = 0;
     this.busy = false;
@@ -29,7 +30,9 @@ class Poster extends EventEmitter {
       this._log(kind, text, 'skipped', 'YouTube 未接続のため送信しません');
       return;
     }
-    if (kind === 'announce') {
+    if (kind === 'info') {
+      this.infos.push(text);
+    } else if (kind === 'announce') {
       if (this.announce) this._log('announce', this.announce, 'replaced', '新しい告知に置き換え');
       this.announce = text;
     } else {
@@ -40,6 +43,7 @@ class Poster extends EventEmitter {
   }
 
   _next() {
+    if (this.infos.length) return { kind: 'info', text: this.infos.shift() };
     if (this.announce) { const t = this.announce; this.announce = null; return { kind: 'announce', text: t }; }
     if (!this.replies.length) return null;
     if (this.getSettings().replies === 'each') return { kind: 'reply', text: this.replies.shift() };
@@ -67,9 +71,9 @@ class Poster extends EventEmitter {
     }
   }
 
-  clear() { this.announce = null; this.replies = []; }
+  clear() { this.announce = null; this.infos = []; this.replies = []; }
 
-  pending() { return (this.announce ? 1 : 0) + this.replies.length; }
+  pending() { return (this.announce ? 1 : 0) + this.infos.length + this.replies.length; }
 
   _log(kind, text, status, note = '') {
     this.log.unshift({ at: new Date().toISOString(), kind, text, status, note });

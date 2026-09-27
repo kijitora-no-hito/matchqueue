@@ -23,6 +23,19 @@ test('告知は返信より優先され、最新の1件だけ送られる', asyn
   assert.equal(p.replies.length, 1);
 });
 
+test('お知らせ（終了予告など）は告知より先に、1件ずつ送られる', async () => {
+  const { p, sent } = makePoster({ minIntervalSec: 1, replies: 'batch' });
+  p.lastSentAt = Date.now();
+  p.enqueue('announce', '第3試合');
+  p.enqueue('info', 'あと2試合で終了');
+  p.lastSentAt = 0;
+  await p.tick();
+  p.lastSentAt = 0;
+  await p.tick();
+  p.stop();
+  assert.deepEqual(sent, ['あと2試合で終了', '第3試合']);
+});
+
 test('返信は200文字以内でまとめられる', async () => {
   const { p, sent } = makePoster({ minIntervalSec: 1, replies: 'batch' });
   p.lastSentAt = Date.now();

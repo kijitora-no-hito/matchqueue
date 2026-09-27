@@ -27,6 +27,8 @@ function snapshot() {
     settings: engine.settings,
     data: engine.data,
     preview: engine.preview(),
+    end: engine.endInfo(),
+    schedule: engine.schedule(),
     coopPresets: COOP_PRESETS,
     announceText: engine.announceText(),
     canUndo: engine.undoStack.length > 0,
@@ -99,7 +101,7 @@ async function init() {
   });
   engine.on('post', ({ kind, text }) => {
     // 受付などの返信はオーバーレイにも出す（わんコメ連携のようにチャットへ投稿できない場合の代わり）
-    if (kind === 'reply' && engine.settings.overlay.notices) server.notice(text);
+    if ((kind === 'reply' || kind === 'info') && engine.settings.overlay.notices) server.notice(text);
     if (yt.canPost()) poster.enqueue(kind, text);
     else candidates.add(kind, text); // 投稿できない時は、配信者がコピペできるよう候補に出す
   });
@@ -163,6 +165,8 @@ const actions = {
     return ok;
   },
   cancelMatch: () => engine.cancelMatch(),
+  setEndPlan: (n) => engine.setEndPlan(n),
+  clearEndPlan: () => engine.clearEndPlan(),
   startNext: () => engine.startNext(),
   postAnnounce: () => {
     if (!yt.canPost()) {

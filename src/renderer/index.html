@@ -16,6 +16,7 @@
     <div class="hstat">参加者<strong id="hCount">0</strong></div>
     <div class="hstat">待機<strong id="hQueue">0</strong></div>
     <div class="hstat"><span id="hMatchesLabel">試合</span><strong id="hMatches">0</strong></div>
+    <div class="endpill" id="endPill" hidden></div>
     <div class="switch" id="acceptSw" title="チャットからの参加受付"><span>参加受付</span><span class="track"></span></div>
   </header>
 
@@ -77,7 +78,13 @@
           </div>
         </div>
         <div class="panel">
-          <h3 id="nextTitle">この先の対戦</h3>
+          <h3><span id="nextTitle">この先の対戦</span>
+            <span class="r endctl" title="配信の終わりが近づいたら、残りの試合数を決めて予定を確定します">
+              あと <input type="number" id="endN" min="1" max="99" value="3" class="w50"> <span id="endUnit">試合</span>で終了
+              <button class="btn sm" id="endSet">予告する</button>
+              <button class="btn sm" id="endClear" hidden>取り消す</button>
+            </span>
+          </h3>
           <div class="pbody"><div class="next" id="next"></div></div>
         </div>
         <!-- YouTube API で投稿できる時 -->
@@ -331,7 +338,7 @@
           </div>
           <div class="card span2">
             <h4>投稿テンプレート</h4>
-            <p class="small mute">変数：{no} 試合番号 {p1} {p2} 対戦者 {next} 次の人 {name} 相手の名前 {id} ゲーム内ID {pos} 順番 {cmd} 参加コマンド</p>
+            <p class="small mute">変数：{no} 試合番号 {p1} {p2} 対戦者 {next} 次の人 {name} 相手の名前 {id} ゲーム内ID {pos} 順番 {cmd} 参加コマンド {n} 残りの数 {last} 最後の番号 {unit} 試合／プレイ</p>
             <div class="tplgrid" id="tplGrid"></div>
           </div>
           <div class="card">

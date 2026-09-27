@@ -370,6 +370,86 @@ test('対戦 ⇔ 協力 の切り替えで参加者は列に戻る', () => {
   assert.deepEqual(queue(e), ['c']);
 });
 
+// ---------- 配信終了予告 ----------
+test('終了予告：あと2試合（進行中を含む）で、それ以降は組まれない', () => {
+  const e = new Engine({ settings: { mode: 'rotation' } });
+  const posts = collectPosts(e);
+  joinAll(e, ['a', 'b', 'c', 'd', 'e', 'f']);
+  assert.deepEqual(cur(e), ['a', 'b']); // 第1試合
+  const info = e.setEndPlan(2);
+  assert.equal(info.endAt, 2);
+  assert.equal(info.remaining, 2);
+  assert.equal(e.settings.accepting, false);
+  assert.ok(posts.some((p) => p.kind === 'info' && p.text.includes('あと2試合')));
+  e.result(1);
+  assert.deepEqual(cur(e), ['c', 'd']); // 第2試合（最後）
+  assert.equal(e.endInfo().last, true);
+  const r = e.result(1);
+  assert.equal(r.finished, true);
+  assert.equal(e.data.current, null);
+  assert.equal(e.endInfo().finished, true);
+  assert.ok(posts.some((p) => p.kind === 'info' && p.text.includes('すべて終了')));
+  e.startNext();
+  assert.equal(e.data.current, null); // 予定を超えては組まない
+});
+
+test('終了予告中は !参加 を締め切り、取り消すと受付と試合が再開する', () => {
+  const e = new Engine();
+  joinAll(e, ['a', 'b']);
+  e.setEndPlan(1);
+  chat(e, 'x', '!参加 xID');
+  assert.ok(!e.data.queue.includes('yt:x'));
+  e.result(1);
+  assert.equal(e.data.current, null);
+  e.clearEndPlan();
+  assert.equal(e.settings.accepting, true);
+  assert.deepEqual(cur(e), ['a', 'b']); // 勝者 a と列に戻った b で再開
+});
+
+test('終了予告の予定表：ローテーションは誰が出るか、回りきらない人も分かる', () => {
+  const e = new Engine({ settings: { mode: 'rotation' } });
+  joinAll(e, ['a', 'b', 'c', 'd', 'e', 'f', 'g']);
+  e.setEndPlan(3);
+  const sc = e.schedule();
+  assert.deepEqual(sc.rows.map((r) => `${r.no}:${r.a} vs ${r.b}`), ['1:a vs b', '2:c vs d', '3:e vs f']);
+  assert.equal(sc.rows[0].now, true);
+  assert.deepEqual(sc.leftover, ['g']);
+});
+
+test('終了予告の予定表：勝ち抜きは「第n試合の勝者」で表示', () => {
+  const e = new Engine();
+  joinAll(e, ['a', 'b', 'c', 'd']);
+  e.setEndPlan(3);
+  const sc = e.schedule();
+  assert.deepEqual(sc.rows.map((r) => `${r.a} vs ${r.b}`), ['a vs b', '第1試合の勝者 vs c', '第2試合の勝者 vs d']);
+  assert.deepEqual(sc.leftover, []);
+});
+
+test('終了予告（協力）：あと2プレイで終わり、パーティーの予定が出る', () => {
+  const e = new Engine({ settings: { format: 'coop', coop: { partySize: 3, stayPlays: 1 } } });
+  joinAll(e, ['a', 'b', 'c', 'd', 'e']);
+  e.setEndPlan(2);
+  const sc = e.schedule();
+  assert.deepEqual(sc.rows.map((r) => r.members), ['a・b', 'c・d']);
+  assert.deepEqual(sc.leftover, ['e']);
+  e.coopEnd('clear');
+  assert.deepEqual(guests(e), ['c', 'd']);
+  const r = e.coopEnd('clear');
+  assert.equal(r.finished, true);
+  assert.equal(e.data.party, null);
+  e.clearEndPlan();
+  assert.ok(e.data.party); // 取り消せば次のパーティーが組まれる
+});
+
+test('新しい配信回を始めると終了予告は消え、受付も元に戻る', () => {
+  const e = new Engine();
+  joinAll(e, ['a', 'b']);
+  e.setEndPlan(1);
+  e.newSession();
+  assert.equal(e.data.endAt, null);
+  assert.equal(e.settings.accepting, true);
+});
+
 // ---------- 配信オーバーレイの配置・見た目 ----------
 test('オーバーレイの配置は一部だけ変えられ、範囲外の値は丸められる', () => {
   const e = new Engine();

@@ -22,6 +22,7 @@
   .join{background:var(--panel);border-left:10px solid var(--accent);padding:14px 26px;font-size:30px;font-weight:800;white-space:nowrap}
   .join small{display:block;font-size:22px;font-weight:500;margin-top:2px;opacity:.85}
   .join.closed{border-color:#777}
+  .join.ending{border-color:var(--p2)}
   .queue{width:380px;background:var(--panel);border-radius:14px;padding:18px 24px;font-size:26px;box-sizing:border-box}
   .queue h5{margin:0 0 8px;font-size:20px;color:var(--accent);letter-spacing:.2em;display:flex}
   .queue h5 span{margin-left:auto;letter-spacing:0;font-weight:500;color:var(--text);opacity:.7}
@@ -132,8 +133,11 @@
 
     $('#b-join').hidden = !o.join;
     const join = $('#join');
-    join.className = 'join' + (s.accepting ? '' : ' closed');
-    join.innerHTML = s.accepting ? `参加受付中！<small>チャットに「${esc(s.joinCmd)} ゲーム内ID」</small>` : '参加受付は終了しました';
+    const end = s.end;
+    join.className = 'join' + (s.accepting ? '' : ' closed') + (end ? ' ending' : '');
+    if (end && end.finished) join.innerHTML = `本日の${end.unit}は終了しました<small>ご参加ありがとうございました！</small>`;
+    else if (end) join.innerHTML = `${end.last ? `ラスト${end.unit}！` : `あと ${end.remaining} ${end.unit}で終了`}<small>${s.accepting ? `チャットに「${esc(s.joinCmd)} ゲーム内ID」` : '参加受付は締め切りました'}</small>`;
+    else join.innerHTML = s.accepting ? `参加受付中！<small>チャットに「${esc(s.joinCmd)} ゲーム内ID」</small>` : '参加受付は終了しました';
 
     $('#b-queue').hidden = !o.queue;
     $('#queue').innerHTML = `<h5>NEXT<span>待機 ${s.queueCount} 人</span></h5><ol>${s.queue.slice(0, 5).map((p) => `<li>${esc(p.name)}</li>`).join('') || '<li class="none">募集中</li>'}</ol>`;
@@ -157,13 +161,13 @@
     if (co) {
       const mem = (p, i) => `<div class="m${i === 0 ? ' host' : ''}">${esc(p.name)}${p.gameId ? `<small>${esc(p.gameId)}</small>` : '<small>&nbsp;</small>'}</div>`;
       const open = Array.from({ length: co.open }, () => '<div class="m open">募集中<small>&nbsp;</small></div>').join('');
-      cv.innerHTML = `<div class="head">PLAY ${co.no}${co.target ? ` ・ <b>${esc(co.target)}</b>` : ''}</div><div class="row">${co.members.map(mem).join('')}${open}</div>`;
+      cv.innerHTML = `<div class="head">${end && end.last && !sample ? '<b>LAST</b> ' : ''}PLAY ${co.no}${co.target ? ` ・ <b>${esc(co.target)}</b>` : ''}</div><div class="row">${co.members.map(mem).join('')}${open}</div>`;
     }
 
     const m = $('#match'), r = $('#round');
     m.hidden = r.hidden = !c;
     if (c) {
-      r.innerHTML = `MATCH ${c.no}${s.champ ? ` ・ <b>${esc(s.champ.name)} ${s.champ.streak}連勝中</b>` : ''}`;
+      r.innerHTML = `${end && end.last && !sample ? '<b>LAST</b> ' : ''}MATCH ${c.no}${s.champ ? ` ・ <b>${esc(s.champ.name)} ${s.champ.streak}連勝中</b>` : ''}`;
       const team = (t) => t.map((p) => `<div class="mem">${esc(p.name)}${p.gameId ? `<small>${esc(p.gameId)}</small>` : ''}</div>`).join('');
       m.classList.toggle('duo', c.teams[0].length > 1);
       m.innerHTML = `<div class="a">${team(c.teams[0])}</div><div class="m">VS</div><div class="b">${team(c.teams[1])}</div>`;
