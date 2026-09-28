@@ -69,6 +69,8 @@ main{overflow:auto;min-width:0;min-height:0}
 .tag.changeId{color:#e0c3ff;border-color:#5b3a82;background:#1f1430}
 .tag.bot{color:#1a1300;background:var(--accent);border-color:var(--accent);font-weight:700}
 .tag.mem{color:#9ff0c9;border-color:#2c6b52}
+.tag.beta{color:#ffb877;border-color:#7a4115;background:#3a1d0b;font-weight:700}
+.betanote{color:#ffb877;margin:-4px 0 8px}
 .tag.test{color:var(--mute);border-style:dashed}
 .mute{color:var(--mute)}
 .small{font-size:12px}

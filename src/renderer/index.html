@@ -89,7 +89,7 @@
         </div>
         <!-- YouTube API で投稿できる時 -->
         <div class="panel grow" id="apiPost">
-          <h3>YouTube への告知
+          <h3>YouTube への告知 <span class="tag beta">β</span>
             <label class="r small chk"><input type="checkbox" data-autopost> 対戦が決まったら自動投稿</label>
           </h3>
           <div class="pbody">
@@ -292,7 +292,8 @@
             </ol>
           </div>
           <div class="card span2">
-            <h4>YouTube 接続（上級者向け・任意）</h4>
+            <h4>YouTube 接続（上級者向け・任意） <span class="tag beta">β・動作未確認</span></h4>
+            <p class="small betanote">β機能です。実際の配信での動作確認がまだできていません。普段使いにはわんコメ連携をおすすめします。</p>
             <div id="ytSetup">
               <p class="small mute">チャットへの自動投稿（告知・受付の返信）もしたい場合に使います。初回のみ、Google Cloud で「OAuth クライアント ID（デスクトップアプリ）」を作成して貼り付けてください。手順は <code>docs/youtube-setup.md</code> を参照。</p>
               <div class="field"><label>クライアント ID</label><input id="ytClientId" class="grow" autocomplete="off"></div>

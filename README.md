@@ -10,10 +10,9 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
     <img alt="Windows版をダウンロード" src="https://img.shields.io/github/v/release/kijitora-no-hito/matchqueue?style=for-the-badge&label=Windows%E7%89%88%E3%82%92%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89&color=0550ae&labelColor=0969da&logo=windows&logoColor=white" width="720">
   </a>
   <br>
-  <sub>ボタンを押すと安定版のインストーラ（MatchQueue-Setup.exe）がダウンロードされます。インストール方法は<a href="#インストール">こちら</a></sub>
+  <sub>ボタンを押すと最新版のインストーラ（MatchQueue-Setup.exe）がダウンロードされます。インストール方法は<a href="#インストール">こちら</a></sub>
   <br>
-  <sub>🧪 新機能のお試し：<a href="https://github.com/kijitora-no-hito/matchqueue/releases/tag/v0.3.0-beta.2">β版 v0.3.0</a>（配信画面のレイアウト調整・配信終了予告）
-  ／ 📦 <a href="https://github.com/kijitora-no-hito/matchqueue/releases">過去のバージョン</a>（v0.2.0 など）</sub>
+  <sub>📦 <a href="https://github.com/kijitora-no-hito/matchqueue/releases">過去のバージョン</a>（v0.2.0 など）</sub>
 </p>
 
 <p align="center"><b>📖 <a href="docs/guide.md">使い方ガイド</a></b> — ゲーム別のおすすめ設定、配信中の操作、視聴者への案内文</p>
@@ -30,8 +29,8 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
   - ゲストが死亡したらその人だけ交代。ボス名・ミッション名の記録
 - **OBS オーバーレイ**：ブラウザソースに URL を貼るだけで対戦カード・パーティー・待機列・受付の返信を表示（背景透過）
   - 位置・大きさをプレビュー上でドラッグ調整、色・透明度・フォントも変更可能
-- **チャットの読み取り**：[わんコメ](https://onecomme.com/) 連携（設定かんたん）または YouTube Data API（上級者向け）
-- **YouTube チャットへの自動告知**（YouTube Data API 利用時のみ）
+- **チャットの読み取り**：[わんコメ](https://onecomme.com/) 連携（設定かんたん）または YouTube Data API（上級者向け・**β**）
+- **YouTube チャットへの自動告知**（**β**・動作未確認）：YouTube Data API を使う場合のみ。わんコメ連携では「投稿候補」をコピーして貼る方式
 - **配信終了予告**：「あと ◯ 試合で終了」で終わりまでの予定を確定し、受付を締め切り
 - 取り消し（Ctrl+Z）、不在の人の交代、待機列のドラッグ並べ替え、履歴の CSV 出力
 
@@ -46,12 +45,7 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
    - ブラウザで「一般的にダウンロードされていません」と出た場合は、「…」→「保持する」を選んでください
 2. スタートメニューまたはデスクトップの「MatchQueue」から起動
 
-過去のバージョン（v0.2.0 など）や更新内容、β版は [Releases](../../releases) にあります。
-β版は新機能を先に試せる版です。不具合があるかもしれないので、本番の配信では安定版をおすすめします（安定版に戻す時は安定版を上書きインストールすれば OK。データは引き継がれます）。
-
-> **v0.3.0 β版の新機能**（β版のみ）
-> - 配信画面（OBS オーバーレイ）の位置・大きさ・色・フォントの調整 → [ガイド](docs/guide.md#配信画面のレイアウトを調整する)
-> - 配信終了予告（あと ◯ 試合で終了） → [ガイド](docs/guide.md#配信の終わりを予告する)
+過去のバージョン（v0.2.0 など）や更新内容は [Releases](../../releases) にあります。
 
 データ（参加者・履歴・設定）は `%APPDATA%\MatchQueue` に保存されます。上書きインストールしても消えません。
 
@@ -77,7 +71,7 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
 |---|---|---|---|
 | なし | 不要 | ×（手動で追加） | × |
 | **わんコメ連携（おすすめ）** | わんコメにプラグインを入れるだけ | ○ | ×（返信はオーバーレイに表示） |
-| YouTube Data API | Google Cloud の設定が必要 | ○ | ○ |
+| YouTube Data API（**β**・動作未確認） | Google Cloud の設定が必要 | ○ | ○ |
 
 ### わんコメ連携（おすすめ）
 
@@ -95,7 +89,9 @@ YouTube のゲーム配信で行う **視聴者参加型のルームマッチ・
 
 ※ プラグインにはわんコメ 5.2 以降が必要です（4.x 以前にはプラグイン機能がありません）。
 
-### YouTube Data API（任意・上級者向け）
+### YouTube Data API（β・任意・上級者向け）
+
+> 🧪 **β機能です。** 実際の配信での動作確認がまだできていません。うまく動かない場合は [Issues](../../issues) でお知らせください。普段使いにはわんコメ連携をおすすめします。
 
 チャットへの自動告知もしたい場合は、YouTube Data API の設定（Google Cloud プロジェクトの作成）が必要です。
 手順は [docs/youtube-setup.md](docs/youtube-setup.md) を参照してください（初回のみ 10 分程度）。

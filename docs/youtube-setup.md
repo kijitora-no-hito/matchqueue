@@ -1,4 +1,8 @@
-# YouTube 接続の初期設定（初回のみ）
+# YouTube 接続の初期設定（初回のみ）【β】
+
+> 🧪 **β機能です。** YouTube Data API を使ったチャットの読み取り・自動投稿は、実際の配信での動作確認がまだできていません。
+> うまく動かない場合は [Issues](https://github.com/kijitora-no-hito/matchqueue/issues) でお知らせください。
+> Google Cloud の設定なしで使える [わんコメ連携](../README.md#わんコメ連携おすすめ) をおすすめします。
 
 MatchQueue が YouTube のライブチャットを読んだり投稿したりするには、
 Google Cloud で「自分専用の接続設定（OAuth クライアント）」を 1 つ作る必要があります。所要 10 分程度・無料です。
